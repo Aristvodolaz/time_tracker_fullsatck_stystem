@@ -1,5 +1,21 @@
 # Инструкция по развертыванию
 
+## ⚠️ ВАЖНО: Переустановка зависимостей на production
+
+После git pull на production сервере **ОБЯЗАТЕЛЬНО** переустановите зависимости:
+
+```bash
+cd /home/admin-lc/time_tracker_fullsatck_stystem/frontend
+pm2 stop time-tracker-frontend
+rm -rf node_modules package-lock.json
+npm install
+pm2 restart time-tracker-frontend
+```
+
+**Причина:** Native модули (PostCSS, Tailwind, esbuild) должны быть скомпилированы на той же платформе (Linux), где они запускаются. Lock-файл с Windows содержит несовместимые бинарные файлы.
+
+---
+
 ## Проблема с Node.js версией
 
 Если вы видите ошибку:
@@ -20,20 +36,38 @@ sudo apt-get install -y nodejs
 node --version
 ```
 
-### Решение 2: Использовать совместимую версию Vite
+### Решение 2: Переустановить зависимости на сервере
 
-Если обновление Node.js невозможно, в папке `frontend`:
+**ВАЖНО:** Native модули (PostCSS, Tailwind) должны быть скомпилированы на той же платформе, где они запускаются.
+
+На production сервере выполните:
 
 ```bash
 cd /home/admin-lc/time_tracker_fullsatck_stystem/frontend
 
+# Остановить приложение
+pm2 stop time-tracker-frontend
+
 # Удалить node_modules и lock файл
 rm -rf node_modules package-lock.json
 
-# Установить зависимости заново
+# Установить зависимости заново (на Linux сервере)
 npm install
 
 # Перезапустить через PM2
+pm2 restart time-tracker-frontend
+```
+
+**Если ошибка повторяется:**
+
+```bash
+# Очистить npm cache
+npm cache clean --force
+
+# Переустановить с rebuild native модулей
+npm install --force
+
+# Перезапустить
 pm2 restart time-tracker-frontend
 ```
 
@@ -63,6 +97,49 @@ pm2 restart time-tracker-backend
 pm2 status
 pm2 logs time-tracker-frontend --lines 50
 pm2 logs time-tracker-backend --lines 50
+```
+
+## Troubleshooting
+
+### Ошибка: "Cannot find native binding"
+
+**Проблема:** PostCSS/Tailwind native модули скомпилированы для другой платформы.
+
+**Решение:**
+```bash
+cd /home/admin-lc/time_tracker_fullsatck_stystem/frontend
+pm2 stop time-tracker-frontend
+rm -rf node_modules package-lock.json
+npm cache clean --force
+npm install
+pm2 restart time-tracker-frontend
+```
+
+### Ошибка: "EADDRINUSE: address already in use"
+
+**Решение:**
+```bash
+# Найти процесс на порту
+lsof -i :3021
+
+# Убить процесс
+kill -9 <PID>
+
+# Перезапустить
+pm2 restart time-tracker-frontend
+```
+
+### Проверка логов
+
+```bash
+# Последние 100 строк
+pm2 logs time-tracker-frontend --lines 100
+
+# Следить за логами в реальном времени
+pm2 logs time-tracker-frontend
+
+# Очистить логи
+pm2 flush
 ```
 
 ## Исправления в этом обновлении
