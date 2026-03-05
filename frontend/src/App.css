@@ -1,0 +1,8 @@
+/* App-specific styles - using Tailwind for most styling */
+
+#root {
+  width: 100%;
+  height: 100vh;
+}
+
+/* Additional custom animations and utilities can be added here */
