@@ -3,7 +3,7 @@ import axios from 'axios';
 import { Settings, X, Plus, Trash2, Upload } from 'lucide-react';
 import ReportPage from './ReportPage';
 
-const API_BASE = 'http://localhost:3020/api';
+const API_BASE = import.meta.env.VITE_API_BASE ?? `${typeof window !== 'undefined' ? window.location.origin : ''}/api`;
 
 type Status = 'IDLE' | 'WORK' | 'BREAK' | 'OUT';
 
