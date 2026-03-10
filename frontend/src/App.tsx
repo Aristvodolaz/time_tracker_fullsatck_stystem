@@ -43,7 +43,7 @@ const App: React.FC = () => {
   const [bulkResult, setBulkResult] = useState<any>(null);
   const [singleForm, setSingleForm] = useState({ zoneId: 'ZONE1', activityBarcode: '', fullName: '', shortName: '', metric: '' });
   const inputRef = useRef<HTMLInputElement>(null);
-  const clearId = useRef<NodeJS.Timeout | null>(null);
+  const clearId = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     const handleHash = () => {
@@ -87,7 +87,7 @@ const App: React.FC = () => {
 
   // Break timer
   useEffect(() => {
-    let interval: NodeJS.Timeout | null = null;
+    let interval: ReturnType<typeof setInterval> | null = null;
     if (state.status === 'BREAK' && state.session) {
       interval = setInterval(() => {
         setState(prev => ({ ...prev, timer: prev.timer + 1 }));

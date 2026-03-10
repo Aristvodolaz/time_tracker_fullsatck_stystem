@@ -16,6 +16,34 @@ pm2 restart time-tracker-frontend
 
 ---
 
+## Ошибка ERR_CONNECTION_REFUSED на /api/scan
+
+Frontend обращается к бэкенду по URL из переменной окружения. На сервере нужно указать адрес бэкенда.
+
+**Решение:**
+
+1. В папке frontend создайте файл `.env`:
+   ```bash
+   cd /home/admin-lc/time_tracker_fullsatck_stystem/frontend
+   echo 'VITE_API_BASE=http://10.171.12.36:3020/api' > .env
+   ```
+   Замените `10.171.12.36` на IP или hostname вашего сервера (тот же, по которому открываете приложение в браузере). Порт `3020` — порт бэкенда (проверьте в `backend/.env`: `PORT=3020`).
+
+2. Перезапустите frontend:
+   ```bash
+   pm2 restart time-tracker-frontend
+   ```
+
+3. Убедитесь, что бэкенд запущен и слушает порт 3020:
+   ```bash
+   pm2 status
+   curl -s http://localhost:3020/api/activities
+   ```
+
+Если бэкенд на другом порту — укажите его в `.env`, например: `VITE_API_BASE=http://10.171.12.36:3001/api`.
+
+---
+
 ## Проблема с Node.js версией
 
 Если вы видите ошибку:
