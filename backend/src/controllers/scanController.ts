@@ -2,6 +2,13 @@ import type { Request, Response } from 'express';
 import * as db from '../db.js';
 import { calculateNightOverlap } from '../utils/timeUtils.js';
 
+/** Обрезает первую и последнюю цифру (символ) из штрих-кода сотрудника. */
+function trimFirstAndLastDigit(value: string): string {
+    const s = value.trim();
+    if (s.length <= 2) return '';
+    return s.slice(1, -1);
+}
+
 export const handleScan = async (req: Request, res: Response) => {
     const { zoneId, scannedValue, currentEmployeeBarcode, currentActivityId, ts } = req.body;
     const now = ts ? new Date(ts) : new Date();
@@ -28,8 +35,9 @@ export const handleScan = async (req: Request, res: Response) => {
         return res.json({ type: 'ACTIVITY_SELECTED', payload: activity });
     }
 
-    // 3. Resolve Employee
-    const employee = await db.queryEmployee(scannedValue);
+    // 3. Resolve Employee (для штрих-кода сотрудника обрезаем первую и последнюю цифру)
+    const employeeBarcode = trimFirstAndLastDigit(scannedValue) || scannedValue.trim();
+    const employee = await db.queryEmployee(employeeBarcode);
     if (employee) {
         return handleEmployeeScan(employee, currentActivityId, now, res);
     }
