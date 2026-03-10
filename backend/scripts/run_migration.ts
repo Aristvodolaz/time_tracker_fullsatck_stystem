@@ -41,7 +41,8 @@ async function runMigration() {
         const batches = sqlContent.split(/^\s*GO\s*$/im);
 
         for (let i = 0; i < batches.length; i++) {
-            const batch = (batches[i] ?? '').trim();
+            const raw = batches[i];
+            const batch = (raw === undefined ? '' : raw).trim();
             if (batch) {
                 console.log(`Executing batch ${i + 1}/${batches.length}...`);
                 await pool.request().batch(batch);

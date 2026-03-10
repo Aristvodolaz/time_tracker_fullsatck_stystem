@@ -74,8 +74,8 @@ export const bulkCreateActivities = async (req, res) => {
     res.json(results);
 };
 export const deleteActivity = async (req, res) => {
-    const { id } = req.params;
-    if (id === undefined) {
+    const id = req.params.id;
+    if (id === undefined || id === '') {
         return res.status(400).json({ message: 'ID обязателен' });
     }
     try {
