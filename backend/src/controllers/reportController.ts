@@ -8,7 +8,7 @@ export const getReport = async (req: Request, res: Response) => {
     const sessions = await db.getSessionsForReport(dateFrom as string, dateTo as string);
     const enriched = await Promise.all(sessions.map(async (s: any) => {
         const emp = await db.queryEmployee(s.employeeBarcode);
-        return { ...s, fullName: emp?.fullName || '' };
+        return { ...s, fullName: emp?.fullName || '', bossId: emp?.bossId ?? '' };
     }));
     res.json(enriched);
 };

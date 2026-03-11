@@ -37,7 +37,7 @@ const ReportPage: React.FC = () => {
         sessions.forEach((s: any) => {
             const d = new Date(s.date).toISOString().slice(0, 10);
             const key = `${s.employeeBarcode}_${d}`;
-            if (!map[key]) map[key] = { employeeBarcode: s.employeeBarcode, date: d, fullName: s.fullName || '', sessions: [] };
+            if (!map[key]) map[key] = { employeeBarcode: s.employeeBarcode, date: d, fullName: s.fullName || '', bossId: s.bossId ?? '', sessions: [] };
             map[key].sessions.push(s);
         });
         setGrouped(Object.values(map));
@@ -94,6 +94,7 @@ const ReportPage: React.FC = () => {
                         <thead>
                             <tr style={{ background: '#1e3a5f', color: '#fff' }}>
                                 <th style={th}>ШК сотрудника</th>
+                                <th style={th}>Boss ID</th>
                                 <th style={th}>ФИО</th>
                                 <th style={th}>Дата</th>
                                 <th style={th}>Код активности</th>
@@ -120,6 +121,7 @@ const ReportPage: React.FC = () => {
                                             {si === 0 ? (
                                                 <>
                                                     <td style={{ ...td, fontWeight: 700 }} rowSpan={g.sessions.length}>{g.employeeBarcode}</td>
+                                                    <td style={{ ...td, fontFamily: 'monospace' }} rowSpan={g.sessions.length}>{g.bossId || '—'}</td>
                                                     <td style={{ ...td, maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis' }} rowSpan={g.sessions.length}>{g.fullName}</td>
                                                     <td style={td} rowSpan={g.sessions.length}>{new Date(g.date).toLocaleDateString('ru-RU')}</td>
                                                 </>
