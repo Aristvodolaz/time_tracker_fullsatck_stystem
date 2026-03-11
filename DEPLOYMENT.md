@@ -51,12 +51,12 @@ Frontend обращается к бэкенду по URL из переменно
 You are using Node.js 18.20.5. Vite requires Node.js version 20.19+ or 22.12+
 ```
 
-### Решение 1: Обновить Node.js (Рекомендуется)
+### Решение 1: Обновить Node.js до 20+ (Рекомендуется)
 
-На production сервере выполните:
+При Node.js 18 появляются предупреждения `EBADENGINE` (Tailwind, ESLint требуют Node 20+), сборка может вести себя нестабильно. На production сервере лучше поставить Node 20 LTS:
 
 ```bash
-# Обновить Node.js до версии 20 LTS или 22 LTS
+# Обновить Node.js до версии 20 LTS
 curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
 sudo apt-get install -y nodejs
 

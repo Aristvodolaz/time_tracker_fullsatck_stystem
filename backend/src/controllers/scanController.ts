@@ -49,14 +49,38 @@ async function handleEmployeeScan(employee: any, currentActivityId: number | nul
     const activeSession = await db.getActiveSession(employee.barcode);
     const lastToday = await db.getLastTodaySession(employee.barcode);
 
-    // If session exists today (active or closed), just show status
-    if (activeSession || lastToday) {
+    // If active session exists (WORK or BREAK), show status
+    if (activeSession) {
         return res.json({
             type: 'EMPLOYEE_SHOWN',
-            payload: { employee, activeSession: activeSession || lastToday },
-            message: activeSession
-                ? `Текущий статус: ${activeSession.status === 'WORK' ? 'РАБОТА' : 'ПЕРЕРЫВ'}`
-                : 'Смена завершена (УХОД)'
+            payload: { employee, activeSession },
+            message: `Текущий статус: ${activeSession.status === 'WORK' ? 'РАБОТА' : 'ПЕРЕРЫВ'}`
+        });
+    }
+
+    // If last session today is OUT and activity is selected, allow new check-in
+    if (lastToday && lastToday.status === 'OUT' && currentActivityId) {
+        await db.createSession({
+            employeeBarcode: employee.barcode,
+            activityId: currentActivityId,
+            date: now,
+            inTime: now,
+            timeType: 'X1'
+        });
+        const newSession = await db.getActiveSession(employee.barcode);
+        return res.json({
+            type: 'CHECKIN_DONE',
+            payload: { employee, session: newSession },
+            message: 'ПРИХОД зафиксирован: статус РАБОТА'
+        });
+    }
+
+    // If last session today is OUT and no activity selected, show status
+    if (lastToday && lastToday.status === 'OUT') {
+        return res.json({
+            type: 'EMPLOYEE_SHOWN',
+            payload: { employee, activeSession: lastToday },
+            message: 'Смена завершена (УХОД). Отсканируйте активность для нового прихода'
         });
     }
 

@@ -169,8 +169,13 @@ const App: React.FC = () => {
     if (clearId.current) clearTimeout(clearId.current);
     clearId.current = setTimeout(() => {
       setState(prev => ({
-        ...prev, employee: null, session: null,
-        status: 'IDLE', message: 'Ожидание сканирования ШК', isError: false
+        ...prev, 
+        activity: null,  // Очищаем активность после таймаута
+        employee: null, 
+        session: null,
+        status: 'IDLE', 
+        message: 'Ожидание сканирования ШК', 
+        isError: false
       }));
     }, 30000);
   };
