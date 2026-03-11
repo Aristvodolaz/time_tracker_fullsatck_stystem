@@ -30,12 +30,19 @@ export const downloadExcelReport = async (req: Request, res: Response) => {
         return { ...s, employee: emp || { fullName: 'Unknown', bossId: '-' } };
     }));
 
-    // Group by employee + date
+    // Group by employee + date and sort by inTime
     const grouped: any = {};
     enrichedSessions.forEach(s => {
         const key = `${s.employeeBarcode}_${format(new Date(s.date), 'yyyy-MM-dd')}`;
         if (!grouped[key]) grouped[key] = [];
         grouped[key].push(s);
+    });
+    
+    // Sort each group by inTime to ensure correct н+1 numbering
+    Object.keys(grouped).forEach(key => {
+        grouped[key].sort((a: any, b: any) => 
+            new Date(a.inTime).getTime() - new Date(b.inTime).getTime()
+        );
     });
 
     // Headers matching the screenshot format exactly
@@ -117,19 +124,20 @@ export const downloadExcelReport = async (req: Request, res: Response) => {
             row[`Активность ${n}, вид времени Ночь`] = fmtHM(nightSeconds);
         };
 
-        // Main activity code
+        // Main activity code (first session's activity)
         row['Основной Код активности (Подразделение)'] = first.activityBarcode;
 
+        // Always enumerate all sessions as н+1, even if same activity code
         if (group.length > 1) {
-            // Multiple activities: fill "Код активности N" for each
+            // Multiple sessions: each gets numbered (н+1)
             group.forEach((s: any, i: number) => {
-                if (i >= 4) return;
+                if (i >= 4) return; // Max 4 activities in Excel format
                 const n = i + 1;
                 row[`Код активности ${n}`] = s.activityBarcode;
                 fillActivity(s, n);
             });
         } else {
-            // Single activity: no "Код активности 1", just main + details
+            // Single session: just fill activity 1 details
             fillActivity(first, 1);
         }
 
