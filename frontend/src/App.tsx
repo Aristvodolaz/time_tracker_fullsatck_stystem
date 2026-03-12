@@ -36,7 +36,13 @@ const App: React.FC = () => {
   const [manualInput, setManualInput] = useState('');
   const [now, setNow] = useState(new Date());
   const [showAdmin, setShowAdmin] = useState(false);
-  const [page, setPage] = useState<'main' | 'report'>('main');
+  const [page, setPage] = useState<'main' | 'report'>(() => {
+    if (typeof window === 'undefined') return 'main';
+    const h = (window.location.hash || '').toLowerCase().trim();
+    const p = (window.location.pathname || '').toLowerCase();
+    const isReport = h === '#report' || (h.length > 0 && h.includes('report')) || p.endsWith('report') || p.includes('/report');
+    return isReport ? 'report' : 'main';
+  });
   const [activities, setActivities] = useState<any[]>([]);
   const [adminZone, setAdminZone] = useState('ZONE1');
   const [bulkText, setBulkText] = useState('');
@@ -47,10 +53,13 @@ const App: React.FC = () => {
 
   useEffect(() => {
     const handleHash = () => {
-      setPage(window.location.hash === '#report' ? 'report' : 'main');
+      const hash = (window.location.hash || '').toLowerCase().trim();
+      const path = (window.location.pathname || '').toLowerCase();
+      const isReport = hash === '#report' || (hash.length > 0 && hash.includes('report')) || path.endsWith('report') || path.includes('/report');
+      setPage(isReport ? 'report' : 'main');
     };
+    handleHash();
     window.addEventListener('hashchange', handleHash);
-    handleHash(); // Initial check
     return () => window.removeEventListener('hashchange', handleHash);
   }, []);
 
@@ -247,6 +256,7 @@ const App: React.FC = () => {
           >
             {testMode ? '✔ Тест-режим' : 'Тест-режим'}
           </button>
+          <a href="#report" style={{ padding: '6px 14px', borderRadius: 8, border: '1px solid #b8c8d8', background: '#f4f8fc', color: '#1e3a5f', fontWeight: 600, fontSize: 14, textDecoration: 'none' }}>Отчёт</a>
           <button title="Админ: Активности" onClick={() => setShowAdmin(true)}
             style={{ padding: '6px 10px', borderRadius: 8, border: '1px solid #b8c8d8', background: '#f4f8fc', cursor: 'pointer', color: '#1e3a5f' }}>
             <Settings size={16} />

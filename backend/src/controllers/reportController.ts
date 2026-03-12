@@ -6,9 +6,17 @@ import { format } from 'date-fns';
 export const getReport = async (req: Request, res: Response) => {
     const { dateFrom, dateTo } = req.query;
     const sessions = await db.getSessionsForReport(dateFrom as string, dateTo as string);
+    // Связка: staff.employee.MANNING_ID = Departments.departmentNumber -> подставляем Departments.name в отчёт
     const enriched = await Promise.all(sessions.map(async (s: any) => {
         const emp = await db.queryEmployee(s.employeeBarcode);
-        return { ...s, fullName: emp?.fullName || '', bossId: emp?.bossId ?? '' };
+        const departmentName = await db.getDepartmentName(emp?.manningId ?? null);
+        return {
+            ...s,
+            fullName: emp?.fullName || '',
+            bossId: emp?.bossId ?? '',
+            manningId: emp?.manningId ?? null,
+            departmentName: departmentName || ''
+        };
     }));
     res.json(enriched);
 };
@@ -25,9 +33,15 @@ export const downloadExcelReport = async (req: Request, res: Response) => {
     const { dateFrom, dateTo } = req.query;
     const baseSessions = await db.getSessionsForReport(dateFrom as string, dateTo as string);
 
+    // Сотрудник ШК → employee.manning_id → Departments: departmentNumber = manning_id → name в отчёт (напр. ШК 62882000 → manning_id 178 → Departments[178].name)
     const enrichedSessions = await Promise.all(baseSessions.map(async (s: any) => {
         const emp = await db.queryEmployee(s.employeeBarcode);
-        return { ...s, employee: emp || { fullName: 'Unknown', bossId: '-' } };
+        const departmentName = await db.getDepartmentName(emp?.manningId ?? null);
+        return {
+            ...s,
+            employee: emp || { fullName: 'Unknown', bossId: '-', manningId: null },
+            departmentName: departmentName || ''
+        };
     }));
 
     // Group by employee + date and sort by inTime
@@ -124,8 +138,8 @@ export const downloadExcelReport = async (req: Request, res: Response) => {
             row[`Активность ${n}, вид времени Ночь`] = fmtHM(nightSeconds);
         };
 
-        // Main activity code (first session's activity)
-        row['Основной Код активности (Подразделение)'] = first.activityBarcode;
+        // Только Departments.name (без подстановки кода активности)
+        row['Основной Код активности (Подразделение)'] = first.departmentName ?? '';
 
         // Always enumerate all sessions as н+1, even if same activity code
         if (group.length > 1) {

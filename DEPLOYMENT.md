@@ -99,7 +99,19 @@ npm install --force
 pm2 restart time-tracker-frontend
 ```
 
-## Развертывание обновлений
+## Таблица подразделений (Departments)
+
+Для вывода в отчёте названия подразделения по `manning_id` сотрудника нужно создать таблицу и заполнить её:
+
+```bash
+# Выполнить на сервере БД (MSSQL) или через скрипт миграции
+cd /home/admin-lc/time_tracker_fullsatck_stystem/backend
+# Скрипт sql/departments.sql — создание таблицы Departments и вставка данных
+```
+
+В базе **SPOe_rc** выполнить скрипт `sql/departments.sql`. При необходимости дописать в него строки из полного справочника подразделений (id = номер подразделения, name = наименование).
+
+В таблице **staff.employee** (источник OPENQUERY) должна быть колонка **MANNING_ID**. Если она называется иначе (например, ManningId), изменить запрос в `backend/src/db.ts` в функции `queryEmployee`.
 
 ### Frontend
 

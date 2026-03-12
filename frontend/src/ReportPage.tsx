@@ -19,13 +19,30 @@ const ReportPage: React.FC = () => {
     const [sessions, setSessions] = useState<any[]>([]);
     const [loading, setLoading] = useState(false);
     const [grouped, setGrouped] = useState<any[]>([]);
+    const [loadError, setLoadError] = useState<string | null>(null);
+
+    // Держим URL в синхронизации со страницей отчёта, чтобы не сбрасывало на главную
+    useEffect(() => {
+        if ((window.location.hash || '').toLowerCase() !== '#report') {
+            window.history.replaceState(null, '', (window.location.pathname || '/') + (window.location.search || '') + '#report');
+        }
+    }, []);
 
     const loadData = useCallback(async () => {
         setLoading(true);
+        setLoadError(null);
         try {
             const res = await axios.get(`${API_BASE}/report`, { params: { dateFrom, dateTo } });
-            setSessions(res.data);
-        } catch { setSessions([]); }
+            let list: any[] = [];
+            if (Array.isArray(res.data)) list = res.data;
+            else if (res.data && Array.isArray((res.data as any).sessions)) list = (res.data as any).sessions;
+            else if (res.data && Array.isArray((res.data as any).data)) list = (res.data as any).data;
+            setSessions(list);
+        } catch (e: any) {
+            setSessions([]);
+            const msg = e?.response?.status === 404 ? 'Эндпоинт отчёта не найден' : e?.response?.data?.message || e?.message || 'Ошибка загрузки отчёта';
+            setLoadError(msg);
+        }
         setLoading(false);
     }, [dateFrom, dateTo]);
 
@@ -34,10 +51,11 @@ const ReportPage: React.FC = () => {
     // Group sessions by employee + date
     useEffect(() => {
         const map: Record<string, any> = {};
-        sessions.forEach((s: any) => {
-            const d = new Date(s.date).toISOString().slice(0, 10);
-            const key = `${s.employeeBarcode}_${d}`;
-            if (!map[key]) map[key] = { employeeBarcode: s.employeeBarcode, date: d, fullName: s.fullName || '', bossId: s.bossId ?? '', sessions: [] };
+        const list = Array.isArray(sessions) ? sessions : [];
+        list.forEach((s: any) => {
+            const d = s.date ? new Date(s.date).toISOString().slice(0, 10) : '';
+            const key = `${s.employeeBarcode || ''}_${d}`;
+            if (!map[key]) map[key] = { employeeBarcode: s.employeeBarcode, date: d, fullName: s.fullName || '', bossId: s.bossId ?? '', departmentName: s.departmentName ?? '', sessions: [] };
             map[key].sessions.push(s);
         });
         setGrouped(Object.values(map));
@@ -47,7 +65,14 @@ const ReportPage: React.FC = () => {
         const params = new URLSearchParams();
         if (dateFrom) params.append('dateFrom', dateFrom);
         if (dateTo) params.append('dateTo', dateTo);
-        window.open(`${API_BASE}/report/excel?${params.toString()}`);
+        const url = `${API_BASE}/report/excel?${params.toString()}`;
+        const a = document.createElement('a');
+        a.href = url;
+        a.target = '_blank';
+        a.rel = 'noopener noreferrer';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
     };
 
     return (
@@ -81,7 +106,14 @@ const ReportPage: React.FC = () => {
                     <Search size={14} /> Показать
                 </button>
                 <span style={{ fontSize: 13, color: '#94a3b8' }}>Найдено: {grouped.length} записей</span>
+                <span style={{ fontSize: 11, color: '#cbd5e1' }} title="Куда уходит запрос">API: {API_BASE}</span>
             </div>
+
+            {loadError && (
+                <div style={{ margin: '16px 24px', padding: '12px 16px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, color: '#b91c1c', fontSize: 14, fontWeight: 600 }}>
+                    {loadError}
+                </div>
+            )}
 
             {/* Table */}
             <div style={{ padding: 24, overflowX: 'auto' }}>
@@ -97,6 +129,7 @@ const ReportPage: React.FC = () => {
                                 <th style={th}>Boss ID</th>
                                 <th style={th}>ФИО</th>
                                 <th style={th}>Дата</th>
+                                <th style={th}>Подразделение</th>
                                 <th style={th}>Код активности</th>
                                 <th style={th}>Активность</th>
                                 <th style={th}>Приход</th>
@@ -110,7 +143,7 @@ const ReportPage: React.FC = () => {
                         </thead>
                         <tbody>
                             {grouped.map((g, gi) => (
-                                g.sessions.map((s: any, si: number) => {
+                                (Array.isArray(g.sessions) ? g.sessions : []).map((s: any, si: number) => {
                                     const inTime = new Date(s.inTime);
                                     const outTime = s.outTime ? new Date(s.outTime) : null;
                                     const worked = outTime ? Math.round((outTime.getTime() - inTime.getTime()) / 1000) - (s.breakTotalSeconds || 0) : 0;
@@ -120,10 +153,11 @@ const ReportPage: React.FC = () => {
                                         <tr key={`${gi}-${si}`} style={{ borderBottom: '1px solid #f1f5f9', background: si % 2 === 0 ? '#fff' : '#f8fafc' }}>
                                             {si === 0 ? (
                                                 <>
-                                                    <td style={{ ...td, fontWeight: 700 }} rowSpan={g.sessions.length}>{g.employeeBarcode}</td>
-                                                    <td style={{ ...td, fontFamily: 'monospace' }} rowSpan={g.sessions.length}>{g.bossId || '—'}</td>
-                                                    <td style={{ ...td, maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis' }} rowSpan={g.sessions.length}>{g.fullName}</td>
-                                                    <td style={td} rowSpan={g.sessions.length}>{new Date(g.date).toLocaleDateString('ru-RU')}</td>
+                                                    <td style={{ ...td, fontWeight: 700 }} rowSpan={(g.sessions && g.sessions.length) || 1}>{g.employeeBarcode ?? '—'}</td>
+                                                    <td style={{ ...td, fontFamily: 'monospace' }} rowSpan={(g.sessions && g.sessions.length) || 1}>{g.bossId ?? '—'}</td>
+                                                    <td style={{ ...td, maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis' }} rowSpan={(g.sessions && g.sessions.length) || 1}>{g.fullName ?? '—'}</td>
+                                                    <td style={td} rowSpan={(g.sessions && g.sessions.length) || 1}>{g.date ? new Date(g.date).toLocaleDateString('ru-RU') : '—'}</td>
+                                                    <td style={{ ...td, maxWidth: 220, overflow: 'hidden', textOverflow: 'ellipsis' }} rowSpan={(g.sessions && g.sessions.length) || 1}>{g.departmentName ?? '—'}</td>
                                                 </>
                                             ) : null}
                                             <td style={{ ...td, fontFamily: 'monospace', fontWeight: 600 }}>{s.activityBarcode}</td>
