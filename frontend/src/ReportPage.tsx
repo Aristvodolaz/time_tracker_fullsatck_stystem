@@ -106,7 +106,6 @@ const ReportPage: React.FC = () => {
                     <Search size={14} /> Показать
                 </button>
                 <span style={{ fontSize: 13, color: '#94a3b8' }}>Найдено: {grouped.length} записей</span>
-                <span style={{ fontSize: 11, color: '#cbd5e1' }} title="Куда уходит запрос">API: {API_BASE}</span>
             </div>
 
             {loadError && (

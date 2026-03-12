@@ -256,7 +256,6 @@ const App: React.FC = () => {
           >
             {testMode ? '✔ Тест-режим' : 'Тест-режим'}
           </button>
-          <a href="#report" style={{ padding: '6px 14px', borderRadius: 8, border: '1px solid #b8c8d8', background: '#f4f8fc', color: '#1e3a5f', fontWeight: 600, fontSize: 14, textDecoration: 'none' }}>Отчёт</a>
           <button title="Админ: Активности" onClick={() => setShowAdmin(true)}
             style={{ padding: '6px 10px', borderRadius: 8, border: '1px solid #b8c8d8', background: '#f4f8fc', cursor: 'pointer', color: '#1e3a5f' }}>
             <Settings size={16} />
