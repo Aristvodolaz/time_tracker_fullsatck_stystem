@@ -1,6 +1,17 @@
 import * as db from '../db.js';
 import * as XLSX from 'xlsx';
 import { format } from 'date-fns';
+// Календарный день строки отчёта: как в Excel, так и на экране — одна дата = одна логическая строка (без сдвига UTC на «YYYY-MM-DD» из SQL)
+function reportDayKey(raw) {
+    if (raw == null || raw === '')
+        return '';
+    if (typeof raw === 'string') {
+        const t = raw.trim();
+        if (/^\d{4}-\d{2}-\d{2}$/.test(t))
+            return t;
+    }
+    return format(new Date(raw), 'yyyy-MM-dd');
+}
 export const getReport = async (req, res) => {
     const { dateFrom, dateTo } = req.query;
     const sessions = await db.getSessionsForReport(dateFrom, dateTo);
@@ -16,6 +27,16 @@ export const getReport = async (req, res) => {
             departmentName: departmentName || ''
         };
     }));
+    enriched.sort((a, b) => {
+        const da = reportDayKey(a.date);
+        const db = reportDayKey(b.date);
+        if (da !== db)
+            return da.localeCompare(db);
+        const bc = String(a.employeeBarcode ?? '').localeCompare(String(b.employeeBarcode ?? ''));
+        if (bc !== 0)
+            return bc;
+        return new Date(a.inTime).getTime() - new Date(b.inTime).getTime();
+    });
     res.json(enriched);
 };
 // Format seconds as H:MM
@@ -42,7 +63,7 @@ export const downloadExcelReport = async (req, res) => {
     // Group by employee + date and sort by inTime
     const grouped = {};
     enrichedSessions.forEach(s => {
-        const key = `${s.employeeBarcode}_${format(new Date(s.date), 'yyyy-MM-dd')}`;
+        const key = `${s.employeeBarcode}_${reportDayKey(s.date)}`;
         if (!grouped[key])
             grouped[key] = [];
         grouped[key].push(s);
@@ -91,8 +112,16 @@ export const downloadExcelReport = async (req, res) => {
         'Активность 4, вид времени x2',
         'Активность 4, вид времени Ночь',
     ];
+    // Сначала дата, потом ШК — при периоде в несколько дней каждый день идёт отдельным блоком строк
+    const sortedGroups = Object.values(grouped).sort((a, b) => {
+        const da = reportDayKey(a[0]?.date);
+        const db = reportDayKey(b[0]?.date);
+        if (da !== db)
+            return da.localeCompare(db);
+        return String(a[0]?.employeeBarcode ?? '').localeCompare(String(b[0]?.employeeBarcode ?? ''));
+    });
     const rows = [];
-    Object.values(grouped).forEach((group) => {
+    sortedGroups.forEach((group) => {
         const first = group[0];
         const row = {
             'ШК сотрудника': first.employeeBarcode,

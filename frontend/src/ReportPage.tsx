@@ -1,8 +1,19 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
+import { format } from 'date-fns';
 import { ArrowLeft, Download, Search } from 'lucide-react';
 
 const API_BASE = import.meta.env.VITE_API_BASE ?? `${typeof window !== 'undefined' ? window.location.origin : ''}/api`;
+
+// Календарный день смены (как на бэкенде в Excel): «YYYY-MM-DD» из API не гоняем через UTC midnight
+function reportDayKey(raw: unknown): string {
+    if (raw == null || raw === '') return '';
+    if (typeof raw === 'string') {
+        const t = raw.trim();
+        if (/^\d{4}-\d{2}-\d{2}$/.test(t)) return t;
+    }
+    return format(new Date(raw as string | Date), 'yyyy-MM-dd');
+}
 
 
 function fmtHM(seconds: number): string {
@@ -48,17 +59,31 @@ const ReportPage: React.FC = () => {
 
     useEffect(() => { loadData(); }, [loadData]);
 
-    // Group sessions by employee + date
+    // Группа = сотрудник + календарный день; сортировка по дате, затем ШК — каждый день отдельным блоком строк
     useEffect(() => {
         const map: Record<string, any> = {};
         const list = Array.isArray(sessions) ? sessions : [];
         list.forEach((s: any) => {
-            const d = s.date ? new Date(s.date).toISOString().slice(0, 10) : '';
-            const key = `${s.employeeBarcode || ''}_${d}`;
-            if (!map[key]) map[key] = { employeeBarcode: s.employeeBarcode, date: d, fullName: s.fullName || '', bossId: s.bossId ?? '', departmentName: s.departmentName ?? '', sessions: [] };
+            const dayKey = reportDayKey(s.date);
+            const key = `${s.employeeBarcode || ''}_${dayKey}`;
+            if (!map[key]) {
+                map[key] = {
+                    employeeBarcode: s.employeeBarcode,
+                    date: dayKey,
+                    fullName: s.fullName || '',
+                    bossId: s.bossId ?? '',
+                    departmentName: s.departmentName ?? '',
+                    sessions: [],
+                };
+            }
             map[key].sessions.push(s);
         });
-        setGrouped(Object.values(map));
+        const rows = Object.values(map) as any[];
+        rows.sort((a, b) => {
+            if (a.date !== b.date) return a.date.localeCompare(b.date);
+            return String(a.employeeBarcode ?? '').localeCompare(String(b.employeeBarcode ?? ''));
+        });
+        setGrouped(rows);
     }, [sessions]);
 
     const handleDownload = () => {
@@ -148,14 +173,20 @@ const ReportPage: React.FC = () => {
                                     const worked = outTime ? Math.round((outTime.getTime() - inTime.getTime()) / 1000) - (s.breakTotalSeconds || 0) : 0;
                                     const statusColor = s.status === 'WORK' ? '#16a34a' : s.status === 'BREAK' ? '#f59e0b' : s.status === 'OUT' ? '#94a3b8' : '#64748b';
                                     const statusLabel = s.status === 'WORK' ? 'РАБОТА' : s.status === 'BREAK' ? 'ПЕРЕРЫВ' : s.status === 'OUT' ? 'УХОД' : s.status;
+                                    const newCalendarDay = gi > 0 && si === 0 && grouped[gi - 1].date !== g.date;
+                                    const dateLabel = g.date ? new Date(`${g.date}T12:00:00`).toLocaleDateString('ru-RU') : '—';
                                     return (
-                                        <tr key={`${gi}-${si}`} style={{ borderBottom: '1px solid #f1f5f9', background: si % 2 === 0 ? '#fff' : '#f8fafc' }}>
+                                        <tr key={`${gi}-${si}`} style={{
+                                            borderBottom: '1px solid #f1f5f9',
+                                            borderTop: newCalendarDay ? '3px solid #94a3b8' : undefined,
+                                            background: si % 2 === 0 ? '#fff' : '#f8fafc',
+                                        }}>
                                             {si === 0 ? (
                                                 <>
                                                     <td style={{ ...td, fontWeight: 700 }} rowSpan={(g.sessions && g.sessions.length) || 1}>{g.employeeBarcode ?? '—'}</td>
                                                     <td style={{ ...td, fontFamily: 'monospace' }} rowSpan={(g.sessions && g.sessions.length) || 1}>{g.bossId ?? '—'}</td>
                                                     <td style={{ ...td, maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis' }} rowSpan={(g.sessions && g.sessions.length) || 1}>{g.fullName ?? '—'}</td>
-                                                    <td style={td} rowSpan={(g.sessions && g.sessions.length) || 1}>{g.date ? new Date(g.date).toLocaleDateString('ru-RU') : '—'}</td>
+                                                    <td style={td} rowSpan={(g.sessions && g.sessions.length) || 1}>{dateLabel}</td>
                                                     <td style={{ ...td, maxWidth: 220, overflow: 'hidden', textOverflow: 'ellipsis' }} rowSpan={(g.sessions && g.sessions.length) || 1}>{g.departmentName ?? '—'}</td>
                                                 </>
                                             ) : null}
