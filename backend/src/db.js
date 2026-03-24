@@ -180,10 +180,16 @@ export async function updateSession(id, updates) {
 }
 export async function getSessionsForReport(dateFrom, dateTo) {
     const pool = await poolPromise;
+    // Явные колонки + алиасы: без s.*, чтобы activityBarcode/shortName всегда шли из Activities (драйвер не терял поля)
     let query = `
-        SELECT s.*, a.activityBarcode, a.shortName 
+        SELECT
+            s.id, s.employeeBarcode, s.activityId, s.date, s.inTime, s.outTime, s.status,
+            s.breakTotalSeconds, s.breakNightSeconds, s.nightWorkedSeconds, s.breakStartedAt, s.timeType,
+            s.createdAt, s.updatedAt,
+            a.activityBarcode AS activityBarcode,
+            a.shortName AS shortName
         FROM TimeSessions s
-        JOIN Activities a ON s.activityId = a.id
+        INNER JOIN Activities a ON s.activityId = a.id
         WHERE 1=1
     `;
     const request = pool.request();

@@ -125,21 +125,14 @@ export const downloadExcelReport = async (req, res) => {
         };
         // Только Departments.name (без подстановки кода активности)
         row['Основной Код активности (Подразделение)'] = first.departmentName ?? '';
-        // Always enumerate all sessions as н+1, even if same activity code
-        if (group.length > 1) {
-            // Multiple sessions: each gets numbered (н+1)
-            group.forEach((s, i) => {
-                if (i >= 4)
-                    return; // Max 4 activities in Excel format
-                const n = i + 1;
-                row[`Код активности ${n}`] = s.activityBarcode;
-                fillActivity(s, n);
-            });
-        }
-        else {
-            // Single session: код активности обязателен в колонке «Код активности 1», как и при нескольких сменах
-            row['Код активности 1'] = first.activityBarcode ?? '';
-            fillActivity(first, 1);
+        // Все смены за день подряд (н+1), максимум 4 блока в шаблоне Excel — одна ветка для 1 и для N смен
+        const sessionCount = Math.min(group.length, 4);
+        for (let i = 0; i < sessionCount; i++) {
+            const s = group[i];
+            const n = i + 1;
+            const barcode = s.activityBarcode;
+            row[`Код активности ${n}`] = barcode != null && String(barcode).trim() !== '' ? String(barcode) : '';
+            fillActivity(s, n);
         }
         row['Итого времени'] = fmtHM(totalWorkedSeconds);
         row['Ночные итого'] = fmtHM(totalNightSeconds);
