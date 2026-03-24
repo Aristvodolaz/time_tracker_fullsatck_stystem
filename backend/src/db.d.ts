@@ -3,6 +3,7 @@ export declare const poolPromise: Promise<mssql.ConnectionPool>;
 export declare function queryEmployee(barcode: string): Promise<any>;
 export declare function getActivity(barcode: string, zoneId?: string): Promise<any>;
 export declare function getCommand(barcode: string): Promise<any>;
+export declare function getDepartmentName(manningId: number | string | null | undefined): Promise<string | null>;
 export declare function getActiveSession(employeeBarcode: string): Promise<any>;
 export declare function getLastTodaySession(employeeBarcode: string): Promise<any>;
 export declare function createSession(data: {

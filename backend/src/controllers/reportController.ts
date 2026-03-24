@@ -151,7 +151,8 @@ export const downloadExcelReport = async (req: Request, res: Response) => {
                 fillActivity(s, n);
             });
         } else {
-            // Single session: just fill activity 1 details
+            // Single session: код активности обязателен в колонке «Код активности 1», как и при нескольких сменах
+            row['Код активности 1'] = first.activityBarcode ?? '';
             fillActivity(first, 1);
         }
 

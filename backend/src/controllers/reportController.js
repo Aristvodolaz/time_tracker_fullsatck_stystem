@@ -4,9 +4,17 @@ import { format } from 'date-fns';
 export const getReport = async (req, res) => {
     const { dateFrom, dateTo } = req.query;
     const sessions = await db.getSessionsForReport(dateFrom, dateTo);
+    // Связка: staff.employee.MANNING_ID = Departments.departmentNumber -> подставляем Departments.name в отчёт
     const enriched = await Promise.all(sessions.map(async (s) => {
         const emp = await db.queryEmployee(s.employeeBarcode);
-        return { ...s, fullName: emp?.fullName || '' };
+        const departmentName = await db.getDepartmentName(emp?.manningId ?? null);
+        return {
+            ...s,
+            fullName: emp?.fullName || '',
+            bossId: emp?.bossId ?? '',
+            manningId: emp?.manningId ?? null,
+            departmentName: departmentName || ''
+        };
     }));
     res.json(enriched);
 };
@@ -21,17 +29,27 @@ function fmtHM(seconds) {
 export const downloadExcelReport = async (req, res) => {
     const { dateFrom, dateTo } = req.query;
     const baseSessions = await db.getSessionsForReport(dateFrom, dateTo);
+    // Сотрудник ШК → employee.manning_id → Departments: departmentNumber = manning_id → name в отчёт (напр. ШК 62882000 → manning_id 178 → Departments[178].name)
     const enrichedSessions = await Promise.all(baseSessions.map(async (s) => {
         const emp = await db.queryEmployee(s.employeeBarcode);
-        return { ...s, employee: emp || { fullName: 'Unknown', bossId: '-' } };
+        const departmentName = await db.getDepartmentName(emp?.manningId ?? null);
+        return {
+            ...s,
+            employee: emp || { fullName: 'Unknown', bossId: '-', manningId: null },
+            departmentName: departmentName || ''
+        };
     }));
-    // Group by employee + date
+    // Group by employee + date and sort by inTime
     const grouped = {};
     enrichedSessions.forEach(s => {
         const key = `${s.employeeBarcode}_${format(new Date(s.date), 'yyyy-MM-dd')}`;
         if (!grouped[key])
             grouped[key] = [];
         grouped[key].push(s);
+    });
+    // Sort each group by inTime to ensure correct н+1 numbering
+    Object.keys(grouped).forEach(key => {
+        grouped[key].sort((a, b) => new Date(a.inTime).getTime() - new Date(b.inTime).getTime());
     });
     // Headers matching the screenshot format exactly
     const headers = [
@@ -105,20 +123,22 @@ export const downloadExcelReport = async (req, res) => {
             row[`Активность ${n}, вид времени x2`] = timeType === 'X2' ? fmtHM(workedSeconds) : '';
             row[`Активность ${n}, вид времени Ночь`] = fmtHM(nightSeconds);
         };
-        // Main activity code
-        row['Основной Код активности (Подразделение)'] = first.activityBarcode;
+        // Только Departments.name (без подстановки кода активности)
+        row['Основной Код активности (Подразделение)'] = first.departmentName ?? '';
+        // Always enumerate all sessions as н+1, even if same activity code
         if (group.length > 1) {
-            // Multiple activities: fill "Код активности N" for each
+            // Multiple sessions: each gets numbered (н+1)
             group.forEach((s, i) => {
                 if (i >= 4)
-                    return;
+                    return; // Max 4 activities in Excel format
                 const n = i + 1;
                 row[`Код активности ${n}`] = s.activityBarcode;
                 fillActivity(s, n);
             });
         }
         else {
-            // Single activity: no "Код активности 1", just main + details
+            // Single session: код активности обязателен в колонке «Код активности 1», как и при нескольких сменах
+            row['Код активности 1'] = first.activityBarcode ?? '';
             fillActivity(first, 1);
         }
         row['Итого времени'] = fmtHM(totalWorkedSeconds);

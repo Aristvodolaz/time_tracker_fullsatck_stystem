@@ -41,8 +41,8 @@ export async function queryEmployee(barcode) {
             const result = await pool.request()
                 .input('empId', mssql.Int, empId)
                 .query(`
-                    SELECT ID as barcode, BOSS_ID as bossId, FULL_NAME as fullName, NAME as shortName
-                    FROM OPENQUERY(OW, 'SELECT * FROM staff.employee')
+                    SELECT ID as barcode, BOSS_ID as bossId, FULL_NAME as fullName, NAME as shortName, MANNING_ID as manningId
+                    FROM OPENQUERY(OW, 'SELECT ID, BOSS_ID, FULL_NAME, NAME, MANNING_ID FROM staff.employee')
                     WHERE ID = @empId
                 `);
             if (result.recordset.length > 0) {
@@ -53,8 +53,8 @@ export async function queryEmployee(barcode) {
         // Fallback mock for dev
         if (process.env.NODE_ENV === 'development') {
             const mocks = {
-                'EMP001': { barcode: 'EMP001', bossId: null, fullName: 'Иванов Иван Иванович (Mock)', shortName: 'Иванов И. И.' },
-                'EMP002': { barcode: 'EMP002', bossId: null, fullName: 'Петров Петр Петрович (Mock)', shortName: 'Петров П. П.' }
+                'EMP001': { barcode: 'EMP001', bossId: null, fullName: 'Иванов Иван Иванович (Mock)', shortName: 'Иванов И. И.', manningId: 2 },
+                'EMP002': { barcode: 'EMP002', bossId: null, fullName: 'Петров Петр Петрович (Mock)', shortName: 'Петров П. П.', manningId: 3 }
             };
             return mocks[barcode.trim()] || null;
         }
@@ -90,6 +90,27 @@ export async function getCommand(barcode) {
         .input('barcode', mssql.NVarChar, barcode.trim())
         .query('SELECT * FROM Commands WHERE barcode = @barcode');
     return result.recordset[0] || null;
+}
+// Подразделение в отчёте: employee.manning_id (напр. 178 для ШК 62882000) = Departments.departmentNumber → выводим Departments.name
+export async function getDepartmentName(manningId) {
+    if (manningId == null || manningId === '')
+        return null;
+    let num;
+    if (typeof manningId === 'number')
+        num = manningId;
+    else {
+        const s = String(manningId).trim();
+        const digits = s.replace(/\D/g, '');
+        num = digits === '' ? NaN : parseInt(digits, 10);
+    }
+    if (isNaN(num))
+        return null;
+    const pool = await poolPromise;
+    const result = await pool.request()
+        .input('departmentNumber', mssql.Int, num)
+        .query('SELECT [name] FROM [dbo].[Departments] WHERE [departmentNumber] = @departmentNumber');
+    const row = result.recordset[0];
+    return row ? (row.name ?? null) : null;
 }
 // --- Session Queries ---
 export async function getActiveSession(employeeBarcode) {
