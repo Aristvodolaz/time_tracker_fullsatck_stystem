@@ -135,6 +135,12 @@ export const downloadExcelReport = async (req: Request, res: Response) => {
             'ФИО': first.employee.fullName,
         };
 
+        // DEBUG: проверяем, есть ли activityBarcode у всех сессий в группе
+        console.log(`[Excel Row] ШК=${first.employeeBarcode}, дата=${reportDayKey(first.date)}, смен=${group.length}`);
+        group.forEach((s: any, idx: number) => {
+            console.log(`  смена ${idx + 1}: activityBarcode="${s.activityBarcode}", activityId=${s.activityId}`);
+        });
+
         let totalWorkedSeconds = 0;
         let totalNightSeconds = 0;
 
