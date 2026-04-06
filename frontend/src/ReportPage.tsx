@@ -101,36 +101,36 @@ const ReportPage: React.FC = () => {
     };
 
     return (
-        <div style={{ minHeight: '100vh', background: '#f1f5f9', fontFamily: "'Segoe UI', Arial, sans-serif" }}>
+        <div style={{ minHeight: '100vh', background: '#f5f5f5', fontFamily: "'Segoe UI', Arial, sans-serif" }}>
             {/* Header */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 24px', background: '#fff', borderBottom: '1px solid #d1dbe8' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 24px', background: '#fff', borderBottom: '1px solid #e0e0e0' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-                    <button onClick={() => window.location.hash = ''} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 14px', borderRadius: 8, border: '1px solid #b8c8d8', background: '#f4f8fc', cursor: 'pointer', color: '#1e3a5f', fontWeight: 600, fontSize: 14 }}>
+                    <button onClick={() => window.location.hash = ''} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 14px', borderRadius: 8, border: '1px solid #d0d0d0', background: '#f5f5f5', cursor: 'pointer', color: '#333333', fontWeight: 600, fontSize: 14 }}>
                         <ArrowLeft size={16} /> Назад
                     </button>
-                    <span style={{ fontWeight: 700, fontSize: 18, color: '#1e3a5f' }}>Отчёт по сменам</span>
+                    <span style={{ fontWeight: 700, fontSize: 18, color: '#CC0000' }}>Отчёт по сменам</span>
                 </div>
-                <button onClick={handleDownload} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 20px', borderRadius: 8, border: 'none', background: '#2563eb', color: '#fff', cursor: 'pointer', fontWeight: 700, fontSize: 14, boxShadow: '0 2px 8px rgba(37,99,235,0.3)' }}>
+                <button onClick={handleDownload} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 20px', borderRadius: 8, border: 'none', background: '#CC0000', color: '#fff', cursor: 'pointer', fontWeight: 700, fontSize: 14, boxShadow: '0 2px 8px rgba(204,0,0,0.3)' }}>
                     <Download size={16} /> Скачать Excel
                 </button>
             </div>
 
             {/* Filters */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '16px 24px', background: '#fff', borderBottom: '1px solid #e2e8f0' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '16px 24px', background: '#fff', borderBottom: '1px solid #e0e0e0' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <label style={{ fontSize: 14, fontWeight: 600, color: '#475569' }}>С:</label>
+                    <label style={{ fontSize: 14, fontWeight: 600, color: '#666666' }}>С:</label>
                     <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)}
-                        style={{ padding: '6px 12px', borderRadius: 8, border: '1px solid #cbd5e1', fontSize: 14, color: '#1e3a5f' }} />
+                        style={{ padding: '6px 12px', borderRadius: 8, border: '1px solid #d0d0d0', fontSize: 14, color: '#333333' }} />
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <label style={{ fontSize: 14, fontWeight: 600, color: '#475569' }}>По:</label>
+                    <label style={{ fontSize: 14, fontWeight: 600, color: '#666666' }}>По:</label>
                     <input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)}
-                        style={{ padding: '6px 12px', borderRadius: 8, border: '1px solid #cbd5e1', fontSize: 14, color: '#1e3a5f' }} />
+                        style={{ padding: '6px 12px', borderRadius: 8, border: '1px solid #d0d0d0', fontSize: 14, color: '#333333' }} />
                 </div>
-                <button onClick={loadData} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 16px', borderRadius: 8, border: '1px solid #cbd5e1', background: '#f8fafc', cursor: 'pointer', fontWeight: 600, color: '#1e3a5f', fontSize: 14 }}>
+                <button onClick={loadData} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 16px', borderRadius: 8, border: '1px solid #d0d0d0', background: '#f9f9f9', cursor: 'pointer', fontWeight: 600, color: '#333333', fontSize: 14 }}>
                     <Search size={14} /> Показать
                 </button>
-                <span style={{ fontSize: 13, color: '#94a3b8' }}>Найдено: {grouped.length} записей</span>
+                <span style={{ fontSize: 13, color: '#999999' }}>Найдено: {grouped.length} записей</span>
             </div>
 
             {loadError && (
@@ -142,13 +142,13 @@ const ReportPage: React.FC = () => {
             {/* Table */}
             <div style={{ padding: 24, overflowX: 'auto' }}>
                 {loading ? (
-                    <div style={{ textAlign: 'center', padding: 40, color: '#94a3b8', fontSize: 16 }}>Загрузка...</div>
+                    <div style={{ textAlign: 'center', padding: 40, color: '#999999', fontSize: 16 }}>Загрузка...</div>
                 ) : grouped.length === 0 ? (
-                    <div style={{ textAlign: 'center', padding: 40, color: '#94a3b8', fontSize: 16 }}>Нет данных за выбранный период</div>
+                    <div style={{ textAlign: 'center', padding: 40, color: '#999999', fontSize: 16 }}>Нет данных за выбранный период</div>
                 ) : (
                     <table style={{ width: '100%', borderCollapse: 'collapse', background: '#fff', borderRadius: 12, overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,0.08)', fontSize: 13 }}>
                         <thead>
-                            <tr style={{ background: '#1e3a5f', color: '#fff' }}>
+                            <tr style={{ background: '#CC0000', color: '#fff' }}>
                                 <th style={th}>ШК сотрудника</th>
                                 <th style={th}>Boss ID</th>
                                 <th style={th}>ФИО</th>
@@ -171,15 +171,15 @@ const ReportPage: React.FC = () => {
                                     const inTime = new Date(s.inTime);
                                     const outTime = s.outTime ? new Date(s.outTime) : null;
                                     const worked = outTime ? Math.round((outTime.getTime() - inTime.getTime()) / 1000) - (s.breakTotalSeconds || 0) : 0;
-                                    const statusColor = s.status === 'WORK' ? '#16a34a' : s.status === 'BREAK' ? '#f59e0b' : s.status === 'OUT' ? '#94a3b8' : '#64748b';
+                                    const statusColor = s.status === 'WORK' ? '#16a34a' : s.status === 'BREAK' ? '#f59e0b' : s.status === 'OUT' ? '#999999' : '#999999';
                                     const statusLabel = s.status === 'WORK' ? 'РАБОТА' : s.status === 'BREAK' ? 'ПЕРЕРЫВ' : s.status === 'OUT' ? 'УХОД' : s.status;
                                     const newCalendarDay = gi > 0 && si === 0 && grouped[gi - 1].date !== g.date;
                                     const dateLabel = g.date ? new Date(`${g.date}T12:00:00`).toLocaleDateString('ru-RU') : '—';
                                     return (
                                         <tr key={`${gi}-${si}`} style={{
-                                            borderBottom: '1px solid #f1f5f9',
-                                            borderTop: newCalendarDay ? '3px solid #94a3b8' : undefined,
-                                            background: si % 2 === 0 ? '#fff' : '#f8fafc',
+                                            borderBottom: '1px solid #f5f5f5',
+                                            borderTop: newCalendarDay ? '3px solid #999999' : undefined,
+                                            background: si % 2 === 0 ? '#fff' : '#f9f9f9',
                                         }}>
                                             {si === 0 ? (
                                                 <>
@@ -221,7 +221,7 @@ const th: React.CSSProperties = {
 };
 
 const td: React.CSSProperties = {
-    padding: '8px 12px', whiteSpace: 'nowrap', color: '#1e3a5f',
+    padding: '8px 12px', whiteSpace: 'nowrap', color: '#333333',
 };
 
 export default ReportPage;

@@ -228,15 +228,15 @@ const App: React.FC = () => {
 
 
   return (
-    <div style={{ minHeight: '100vh', background: '#e8eef5', display: 'flex', flexDirection: 'column', fontFamily: "'Segoe UI', Arial, sans-serif" }}>
+    <div style={{ minHeight: '100vh', background: '#f5f5f5', display: 'flex', flexDirection: 'column', fontFamily: "'Segoe UI', Arial, sans-serif" }}>
       {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 24px', background: '#fff', borderBottom: '1px solid #d1dbe8' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 24px', background: '#fff', borderBottom: '1px solid #e0e0e0' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-          <span style={{ fontWeight: 700, fontSize: 18, color: '#1e3a5f' }}>TimeTracker</span>
+          <span style={{ fontWeight: 700, fontSize: 18, color: '#CC0000' }}>TimeTracker</span>
           <select
             value={state.zoneId}
             onChange={e => setState(prev => ({ ...prev, zoneId: e.target.value, message: 'Ожидание сканирования ШК активности' }))}
-            style={{ padding: '6px 12px', borderRadius: 8, border: '1px solid #b8c8d8', fontSize: 14, background: '#f4f8fc', cursor: 'pointer', color: '#1e3a5f', fontWeight: 600 }}
+            style={{ padding: '6px 12px', borderRadius: 8, border: '1px solid #d0d0d0', fontSize: 14, background: '#f5f5f5', cursor: 'pointer', color: '#333333', fontWeight: 600 }}
           >
             <option value="">— Выберите зону —</option>
             <option value="ZONE1">Склад (ZONE1)</option>
@@ -252,12 +252,12 @@ const App: React.FC = () => {
         <div style={{ display: 'flex', gap: 8 }}>
           <button
             onClick={() => setTestMode(prev => !prev)}
-            style={{ padding: '6px 14px', borderRadius: 8, border: `1px solid ${testMode ? '#f59e0b' : '#b8c8d8'}`, background: testMode ? '#fef3c7' : '#f4f8fc', cursor: 'pointer', color: testMode ? '#b45309' : '#1e3a5f', fontWeight: 700, fontSize: 13 }}
+            style={{ padding: '6px 14px', borderRadius: 8, border: `1px solid ${testMode ? '#f59e0b' : '#d0d0d0'}`, background: testMode ? '#fef3c7' : '#f5f5f5', cursor: 'pointer', color: testMode ? '#b45309' : '#333333', fontWeight: 700, fontSize: 13 }}
           >
             {testMode ? '✔ Тест-режим' : 'Тест-режим'}
           </button>
           <button title="Админ: Активности" onClick={() => setShowAdmin(true)}
-            style={{ padding: '6px 10px', borderRadius: 8, border: '1px solid #b8c8d8', background: '#f4f8fc', cursor: 'pointer', color: '#1e3a5f' }}>
+            style={{ padding: '6px 10px', borderRadius: 8, border: '1px solid #d0d0d0', background: '#f5f5f5', cursor: 'pointer', color: '#333333' }}>
             <Settings size={16} />
           </button>
         </div>
@@ -301,8 +301,8 @@ const App: React.FC = () => {
       {/* Main Card */}
       <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
         <div style={{
-          background: '#dde8f2',
-          border: '2px solid #b0c4d8',
+          background: '#ffffff',
+          border: '2px solid #d0d0d0',
           borderRadius: 24,
           padding: '36px 40px',
           width: '100%',
@@ -315,17 +315,17 @@ const App: React.FC = () => {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
             {/* Activity */}
             <div>
-              <div style={{ fontSize: 15, color: '#3a5a7a', marginBottom: 8, textAlign: 'center' }}>
+              <div style={{ fontSize: 15, color: '#666666', marginBottom: 8, textAlign: 'center' }}>
                 Сканируйте ШК активности
               </div>
               <div style={{
                 background: '#fff',
-                border: '1px solid #a0b8cc',
+                border: '1px solid #d0d0d0',
                 borderRadius: 12,
                 padding: '14px 20px',
                 fontSize: 22,
                 fontWeight: 700,
-                color: state.activity ? '#1e3a5f' : '#a0b8cc',
+                color: state.activity ? '#333333' : '#d0d0d0',
                 textAlign: 'center',
                 minHeight: 56,
                 display: 'flex',
@@ -338,17 +338,17 @@ const App: React.FC = () => {
 
             {/* Employee */}
             <div>
-              <div style={{ fontSize: 15, color: '#3a5a7a', marginBottom: 8, textAlign: 'center' }}>
+              <div style={{ fontSize: 15, color: '#666666', marginBottom: 8, textAlign: 'center' }}>
                 Сканируйте ШК сотрудника
               </div>
               <div style={{
                 background: '#fff',
-                border: '1px solid #a0b8cc',
+                border: '1px solid #d0d0d0',
                 borderRadius: 12,
                 padding: '14px 20px',
                 fontSize: 20,
                 fontWeight: 600,
-                color: state.employee ? '#1e3a5f' : '#a0b8cc',
+                color: state.employee ? '#333333' : '#d0d0d0',
                 textAlign: 'center',
                 minHeight: 56,
                 display: 'flex',
@@ -395,34 +395,34 @@ const App: React.FC = () => {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
             {/* Arrival */}
             <div>
-              <div style={{ fontSize: 14, color: '#3a5a7a', marginBottom: 6 }}>Дата и время прихода</div>
+              <div style={{ fontSize: 14, color: '#666666', marginBottom: 6 }}>Дата и время прихода</div>
               <div style={inputBox}>{state.session?.inTime ? formatDT(state.session.inTime) : formatDT()}</div>
             </div>
 
             {/* Departure */}
             <div>
-              <div style={{ fontSize: 14, color: '#3a5a7a', marginBottom: 6 }}>Дата и время ухода</div>
+              <div style={{ fontSize: 14, color: '#666666', marginBottom: 6 }}>Дата и время ухода</div>
               <div style={inputBox}>{state.session?.outTime ? formatDT(state.session.outTime) : '—'}</div>
             </div>
 
             {/* Worked + Coeff */}
             <div style={{ display: 'flex', alignItems: 'flex-start', gap: 16 }}>
               <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 14, color: '#3a5a7a', marginBottom: 6 }}>Отработано</div>
+                <div style={{ fontSize: 14, color: '#666666', marginBottom: 6 }}>Отработано</div>
                 <div style={inputBox}>{netSeconds > 0 ? formatHM(netSeconds) : '—'}</div>
               </div>
               <div style={{ paddingTop: 24, display: 'flex', flexDirection: 'column', gap: 6 }}>
                 {([['X1', 'CMD_X1', 'x1'], ['X1_5', 'CMD_X1_5', 'x1,5'], ['X2', 'CMD_X2', 'x2']] as const).map(([type, cmd, label]) => {
                   const isActive = currentCoeff === type;
                   return (
-                    <label key={type} style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: state.session ? 'pointer' : 'default', fontSize: 15, fontWeight: 600, color: '#1e3a5f' }}>
+                    <label key={type} style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: state.session ? 'pointer' : 'default', fontSize: 15, fontWeight: 600, color: '#333333' }}>
                       <input
                         type="radio"
                         name="coeff"
                         checked={isActive}
                         onChange={() => handleCoeff(cmd)}
                         disabled={!state.session}
-                        style={{ width: 18, height: 18, accentColor: '#2563eb', cursor: state.session ? 'pointer' : 'default' }}
+                        style={{ width: 18, height: 18, accentColor: '#CC0000', cursor: state.session ? 'pointer' : 'default' }}
                       />
                       {label}
                     </label>
@@ -433,7 +433,7 @@ const App: React.FC = () => {
 
             {/* Break */}
             <div>
-              <div style={{ fontSize: 14, color: '#3a5a7a', marginBottom: 6 }}>Перерыв</div>
+              <div style={{ fontSize: 14, color: '#666666', marginBottom: 6 }}>Перерыв</div>
               <div style={inputBox}>{breakSeconds > 0 ? formatHM(breakSeconds) : '—'}</div>
             </div>
           </div>
@@ -446,14 +446,14 @@ const App: React.FC = () => {
         display: 'flex', gap: 16, justifyContent: 'center', flexWrap: 'wrap',
       }}>
         {[
-          { step: '1', text: 'Сканируйте ШК активности (участка)', color: '#2563eb' },
+          { step: '1', text: 'Сканируйте ШК активности (участка)', color: '#CC0000' },
           { step: '2', text: 'Сканируйте ШК сотрудника — рабочий день начнётся автоматически', color: '#16a34a' },
           { step: '3', text: 'Перерыв → сканируйте ШК-ПЕРЕРЫВ Уход → сканируйте ШК-УХОД', color: '#f59e0b' },
         ].map(s => (
           <div key={s.step} style={{
             display: 'flex', alignItems: 'center', gap: 8,
-            background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 10, padding: '6px 14px',
-            fontSize: 13, color: '#475569',
+            background: '#f9f9f9', border: '1px solid #e0e0e0', borderRadius: 10, padding: '6px 14px',
+            fontSize: 13, color: '#666666',
           }}>
             <span style={{
               width: 22, height: 22, borderRadius: '50%', background: s.color, color: '#fff',
@@ -468,8 +468,8 @@ const App: React.FC = () => {
       {/* Bottom Message */}
       <div style={{
         padding: '12px 24px',
-        borderTop: '1px solid #c8d8e8',
-        background: state.isError ? '#fef2f2' : '#f0f6ff',
+        borderTop: '1px solid #e0e0e0',
+        background: state.isError ? '#fef2f2' : '#fef5f5',
         display: 'flex',
         alignItems: 'center',
         gap: 12,
@@ -477,13 +477,13 @@ const App: React.FC = () => {
       }}>
         <div style={{
           width: 10, height: 10, borderRadius: '50%', flexShrink: 0,
-          background: state.isError ? '#ef4444' : '#3b82f6',
+          background: state.isError ? '#ef4444' : '#CC0000',
         }} />
         <div>
-          <div style={{ fontSize: 11, fontWeight: 700, color: state.isError ? '#b91c1c' : '#1d4ed8', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 2 }}>
+          <div style={{ fontSize: 11, fontWeight: 700, color: state.isError ? '#b91c1c' : '#CC0000', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 2 }}>
             Системное сообщение
           </div>
-          <div style={{ fontSize: 17, fontWeight: 600, color: state.isError ? '#7f1d1d' : '#1e3a5f' }}>
+          <div style={{ fontSize: 17, fontWeight: 600, color: state.isError ? '#7f1d1d' : '#333333' }}>
             {state.message}
           </div>
         </div>
@@ -509,32 +509,32 @@ const App: React.FC = () => {
 
             {/* Header */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <h2 style={{ margin: 0, fontSize: 20, fontWeight: 700, color: '#1e3a5f' }}>Управление активностями</h2>
+              <h2 style={{ margin: 0, fontSize: 20, fontWeight: 700, color: '#333333' }}>Управление активностями</h2>
               <button onClick={() => { setShowAdmin(false); setBulkResult(null); setBulkText(''); }}
-                style={{ border: 'none', background: 'none', cursor: 'pointer', fontSize: 22, color: '#64748b' }}>
+                style={{ border: 'none', background: 'none', cursor: 'pointer', fontSize: 22, color: '#999999' }}>
                 <X size={24} />
               </button>
             </div>
 
             {/* Bulk Import from Excel */}
-            <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 12, padding: 16 }}>
-              <div style={{ fontWeight: 700, color: '#1e3a5f', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 8 }}>
+            <div style={{ background: '#f9f9f9', border: '1px solid #e0e0e0', borderRadius: 12, padding: 16 }}>
+              <div style={{ fontWeight: 700, color: '#333333', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 8 }}>
                 <Upload size={16} /> Массовый импорт из Excel (вставьте колонки: Наименование, ШК, Метрика)
               </div>
               <div style={{ display: 'flex', gap: 10, marginBottom: 10, alignItems: 'center' }}>
-                <span style={{ fontSize: 13, color: '#64748b' }}>Зона:</span>
+                <span style={{ fontSize: 13, color: '#999999' }}>Зона:</span>
                 <select value={adminZone} onChange={e => setAdminZone(e.target.value)}
-                  style={{ padding: '4px 10px', borderRadius: 6, border: '1px solid #cbd5e1', fontSize: 13 }}>
+                  style={{ padding: '4px 10px', borderRadius: 6, border: '1px solid #d0d0d0', fontSize: 13 }}>
                   <option value="ZONE1">Склад (ZONE1)</option>
                   <option value="ZONE2">Логистика (ZONE2)</option>
                 </select>
-                <span style={{ fontSize: 12, color: '#94a3b8' }}>Скопируйте ячейки из Excel и вставьте в поле ниже</span>
+                <span style={{ fontSize: 12, color: '#999999' }}>Скопируйте ячейки из Excel и вставьте в поле ниже</span>
               </div>
               <textarea
                 value={bulkText}
                 onChange={e => setBulkText(e.target.value)}
                 placeholder={'Наименование\tШК\tМетрика\nРЦ_Домодедово_...\t000001111\tсмена 3'}
-                style={{ width: '100%', height: 100, borderRadius: 8, border: '1px solid #cbd5e1', padding: '8px 12px', fontSize: 13, fontFamily: 'monospace', resize: 'vertical', boxSizing: 'border-box' }}
+                style={{ width: '100%', height: 100, borderRadius: 8, border: '1px solid #d0d0d0', padding: '8px 12px', fontSize: 13, fontFamily: 'monospace', resize: 'vertical', boxSizing: 'border-box' }}
               />
               <div style={{ display: 'flex', gap: 10, marginTop: 8, alignItems: 'center' }}>
                 <button
@@ -556,7 +556,7 @@ const App: React.FC = () => {
                       loadActivities();
                     } catch (e: any) { setBulkResult({ error: e.message }); }
                   }}
-                  style={{ padding: '6px 18px', borderRadius: 8, background: '#2563eb', color: '#fff', border: 'none', cursor: 'pointer', fontWeight: 700 }}>
+                  style={{ padding: '6px 18px', borderRadius: 8, background: '#CC0000', color: '#fff', border: 'none', cursor: 'pointer', fontWeight: 700 }}>
                   <Plus size={14} style={{ display: 'inline', marginRight: 4 }} />
                   Импортировать
                 </button>
@@ -569,8 +569,8 @@ const App: React.FC = () => {
             </div>
 
             {/* Single Add Form */}
-            <details style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 12, padding: 12 }}>
-              <summary style={{ cursor: 'pointer', fontWeight: 700, color: '#1e3a5f', fontSize: 14 }}>+ Добавить одну активность вручную</summary>
+            <details style={{ background: '#f9f9f9', border: '1px solid #e0e0e0', borderRadius: 12, padding: 12 }}>
+              <summary style={{ cursor: 'pointer', fontWeight: 700, color: '#333333', fontSize: 14 }}>+ Добавить одну активность вручную</summary>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr auto', gap: 8, marginTop: 10, alignItems: 'end' }}>
                 {[
                   { key: 'activityBarcode', placeholder: 'ШК' },
@@ -580,7 +580,7 @@ const App: React.FC = () => {
                 ].map(f => (
                   <input key={f.key} placeholder={f.placeholder} value={(singleForm as any)[f.key]}
                     onChange={e => setSingleForm(prev => ({ ...prev, [f.key]: e.target.value }))}
-                    style={{ padding: '6px 10px', borderRadius: 6, border: '1px solid #cbd5e1', fontSize: 13 }} />
+                    style={{ padding: '6px 10px', borderRadius: 6, border: '1px solid #d0d0d0', fontSize: 13 }} />
                 ))}
                 <button onClick={async () => {
                   if (!singleForm.activityBarcode || !singleForm.fullName || !singleForm.shortName) return;
@@ -594,26 +594,26 @@ const App: React.FC = () => {
             </details>
 
             {/* Activity List */}
-            <div style={{ flex: 1, overflowY: 'auto', border: '1px solid #e2e8f0', borderRadius: 10 }}>
+            <div style={{ flex: 1, overflowY: 'auto', border: '1px solid #e0e0e0', borderRadius: 10 }}>
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
                 <thead>
-                  <tr style={{ background: '#f1f5f9', position: 'sticky', top: 0 }}>
+                  <tr style={{ background: '#f5f5f5', position: 'sticky', top: 0 }}>
                     {['Зона', 'ШК', 'Полное название', 'Короткое', 'Метрика', ''].map(h => (
-                      <th key={h} style={{ padding: '8px 10px', textAlign: 'left', fontWeight: 700, color: '#475569', borderBottom: '1px solid #e2e8f0' }}>{h}</th>
+                      <th key={h} style={{ padding: '8px 10px', textAlign: 'left', fontWeight: 700, color: '#666666', borderBottom: '1px solid #e0e0e0' }}>{h}</th>
                     ))}
                   </tr>
                 </thead>
                 <tbody>
                   {activities.length === 0 && (
-                    <tr><td colSpan={6} style={{ padding: 20, textAlign: 'center', color: '#94a3b8' }}>Нет активностей</td></tr>
+                    <tr><td colSpan={6} style={{ padding: 20, textAlign: 'center', color: '#999999' }}>Нет активностей</td></tr>
                   )}
                   {activities.map((act: any) => (
-                    <tr key={act.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                      <td style={{ padding: '6px 10px', color: '#64748b' }}>{act.zoneId}</td>
+                    <tr key={act.id} style={{ borderBottom: '1px solid #f5f5f5' }}>
+                      <td style={{ padding: '6px 10px', color: '#999999' }}>{act.zoneId}</td>
                       <td style={{ padding: '6px 10px', fontFamily: 'monospace', fontWeight: 600 }}>{act.activityBarcode}</td>
                       <td style={{ padding: '6px 10px', maxWidth: 280, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={act.fullName}>{act.fullName}</td>
-                      <td style={{ padding: '6px 10px', fontWeight: 600, color: '#1e3a5f' }}>{act.shortName}</td>
-                      <td style={{ padding: '6px 10px', color: '#64748b' }}>{act.metric}</td>
+                      <td style={{ padding: '6px 10px', fontWeight: 600, color: '#333333' }}>{act.shortName}</td>
+                      <td style={{ padding: '6px 10px', color: '#999999' }}>{act.metric}</td>
                       <td style={{ padding: '6px 10px' }}>
                         <button onClick={async () => {
                           if (!confirm(`Удалить "${act.shortName}"?`)) return;
@@ -637,12 +637,12 @@ const App: React.FC = () => {
 
 const inputBox: React.CSSProperties = {
   background: '#fff',
-  border: '1px solid #a0b8cc',
+  border: '1px solid #d0d0d0',
   borderRadius: 10,
   padding: '10px 16px',
   fontSize: 18,
   fontWeight: 600,
-  color: '#1e3a5f',
+  color: '#333333',
   minHeight: 46,
   display: 'flex',
   alignItems: 'center',

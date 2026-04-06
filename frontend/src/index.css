@@ -1,6 +1,6 @@
-/* Removed Tailwind */
+/* Komus-branded color scheme */
 :root {
-  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family: 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
   line-height: 1.5;
   font-weight: 400;
   color-scheme: light;
@@ -15,7 +15,7 @@ body {
   height: 100vh;
   width: 100vw;
   overflow: hidden;
-  background-color: #f8fafc;
+  background-color: #f5f5f5;
 }
 
 #root {
@@ -61,10 +61,10 @@ select {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
+  background: #cccccc;
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
+  background: #999999;
 }
