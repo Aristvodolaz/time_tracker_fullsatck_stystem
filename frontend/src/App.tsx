@@ -44,10 +44,10 @@ const App: React.FC = () => {
     return isReport ? 'report' : 'main';
   });
   const [activities, setActivities] = useState<any[]>([]);
-  const [adminZone, setAdminZone] = useState('ZONE1');
+  const [adminZone, setAdminZone] = useState('ТЕРМИНАЛ-3');
   const [bulkText, setBulkText] = useState('');
   const [bulkResult, setBulkResult] = useState<any>(null);
-  const [singleForm, setSingleForm] = useState({ zoneId: 'ZONE1', activityBarcode: '', fullName: '', shortName: '', metric: '' });
+  const [singleForm, setSingleForm] = useState({ zoneId: 'ТЕРМИНАЛ-3', activityBarcode: '', fullName: '', shortName: '', metric: '' });
   const inputRef = useRef<HTMLInputElement>(null);
   const clearId = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -239,8 +239,10 @@ const App: React.FC = () => {
             style={{ padding: '6px 12px', borderRadius: 8, border: '1px solid #d0d0d0', fontSize: 14, background: '#f5f5f5', cursor: 'pointer', color: '#333333', fontWeight: 600 }}
           >
             <option value="">— Выберите зону —</option>
-            <option value="ZONE1">Склад (ZONE1)</option>
-            <option value="ZONE2">Логистика (ZONE2)</option>
+            <option value="ТЕРМИНАЛ-3">Терминал 3</option>
+            <option value="ТЕРМИНАЛ-2">Терминал 2</option>
+            <option value="МЕЗОНИН">Мезонин</option>
+            <option value="БАЛК">Балк</option>
           </select>
           <span style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13 }}>
             <span style={{ width: 8, height: 8, borderRadius: '50%', background: isFocused ? '#22c55e' : '#ef4444', display: 'inline-block' }} />
@@ -525,8 +527,10 @@ const App: React.FC = () => {
                 <span style={{ fontSize: 13, color: '#999999' }}>Зона:</span>
                 <select value={adminZone} onChange={e => setAdminZone(e.target.value)}
                   style={{ padding: '4px 10px', borderRadius: 6, border: '1px solid #d0d0d0', fontSize: 13 }}>
-                  <option value="ZONE1">Склад (ZONE1)</option>
-                  <option value="ZONE2">Логистика (ZONE2)</option>
+                  <option value="ТЕРМИНАЛ-3">Терминал 3</option>
+                  <option value="ТЕРМИНАЛ-2">Терминал 2</option>
+                  <option value="МЕЗОНИН">Мезонин</option>
+                  <option value="БАЛК">Балк</option>
                 </select>
                 <span style={{ fontSize: 12, color: '#999999' }}>Скопируйте ячейки из Excel и вставьте в поле ниже</span>
               </div>
@@ -585,7 +589,7 @@ const App: React.FC = () => {
                 <button onClick={async () => {
                   if (!singleForm.activityBarcode || !singleForm.fullName || !singleForm.shortName) return;
                   await axios.post(`${API_BASE}/activities`, { ...singleForm });
-                  setSingleForm({ zoneId: 'ZONE1', activityBarcode: '', fullName: '', shortName: '', metric: '' });
+                  setSingleForm({ zoneId: 'ТЕРМИНАЛ-3', activityBarcode: '', fullName: '', shortName: '', metric: '' });
                   loadActivities();
                 }} style={{ padding: '6px 14px', borderRadius: 6, background: '#16a34a', color: '#fff', border: 'none', cursor: 'pointer', fontWeight: 700 }}>
                   Добавить
