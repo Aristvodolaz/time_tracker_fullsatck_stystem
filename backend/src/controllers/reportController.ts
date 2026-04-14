@@ -82,6 +82,7 @@ export const downloadExcelReport = async (req: Request, res: Response) => {
         'ШК сотрудника', 'Boss ID', 'ФИО',
         'Основной Код активности (Подразделение)',
         'Код активности 1',
+        'Наименование активности 1',
         'Итого времени', 'Ночные итого',
         // Activity 1 detail columns
         'Дата прихода активность 1',
@@ -94,6 +95,7 @@ export const downloadExcelReport = async (req: Request, res: Response) => {
         'Активность 1, вид времени Ночь',
         // Activity 2
         'Код активности 2',
+        'Наименование активности 2',
         'Время прихода активность 2',
         'Время ухода активность 2',
         'Итоговое время на активности 2 x1, ч',
@@ -102,6 +104,7 @@ export const downloadExcelReport = async (req: Request, res: Response) => {
         'Активность 2, вид времени Ночь',
         // Activity 3
         'Код активности 3',
+        'Наименование активности 3',
         'Время прихода активность 3',
         'Время ухода активность 3',
         'Итоговое время на активности 3 x1, ч',
@@ -110,6 +113,7 @@ export const downloadExcelReport = async (req: Request, res: Response) => {
         'Активность 3, вид времени Ночь',
         // Activity 4
         'Код активности 4',
+        'Наименование активности 4',
         'Время прихода активность 4',
         'Время ухода активность 4',
         'Итоговое время на активности 4 x1, ч',
@@ -180,6 +184,7 @@ export const downloadExcelReport = async (req: Request, res: Response) => {
             const n = i + 1;
             const barcode = s.activityBarcode;
             row[`Код активности ${n}`] = barcode != null && String(barcode).trim() !== '' ? String(barcode) : '';
+            row[`Наименование активности ${n}`] = s.shortName || '';
             fillActivity(s, n);
         }
 
