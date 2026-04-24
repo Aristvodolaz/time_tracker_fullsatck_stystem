@@ -65,7 +65,10 @@ async function handleEmployeeScan(employee: any, currentActivityId: number | nul
             activityId: currentActivityId,
             date: now,
             inTime: now,
-            timeType: 'X1'
+            timeType: 'X1',
+            employeeFullName: employee.fullName ?? null,
+            employeeBossId: employee.bossId ?? null,
+            employeeManningId: employee.manningId ?? null
         });
         const newSession = await db.getActiveSession(employee.barcode);
         return res.json({
@@ -91,7 +94,10 @@ async function handleEmployeeScan(employee: any, currentActivityId: number | nul
             activityId: currentActivityId,
             date: now,
             inTime: now,
-            timeType: 'X1'
+            timeType: 'X1',
+            employeeFullName: employee.fullName ?? null,
+            employeeBossId: employee.bossId ?? null,
+            employeeManningId: employee.manningId ?? null
         });
         const newSession = await db.getActiveSession(employee.barcode);
         return res.json({

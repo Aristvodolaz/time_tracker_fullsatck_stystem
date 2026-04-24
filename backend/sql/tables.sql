@@ -55,6 +55,15 @@ BEGIN
 END
 GO
 
+-- 3b. Migration: add cached employee info columns to TimeSessions (safe to re-run)
+IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'[dbo].[TimeSessions]') AND name = 'employeeFullName')
+    ALTER TABLE [dbo].[TimeSessions] ADD [employeeFullName] NVARCHAR(255) NULL;
+IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'[dbo].[TimeSessions]') AND name = 'employeeBossId')
+    ALTER TABLE [dbo].[TimeSessions] ADD [employeeBossId] NVARCHAR(50) NULL;
+IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'[dbo].[TimeSessions]') AND name = 'employeeManningId')
+    ALTER TABLE [dbo].[TimeSessions] ADD [employeeManningId] INT NULL;
+GO
+
 -- 4. Seed basic commands
 IF NOT EXISTS (SELECT * FROM [dbo].[Commands] WHERE [code] = 'BREAKTIME')
     INSERT INTO [dbo].[Commands] ([code], [barcode], [title]) VALUES ('BREAKTIME', 'CMD_BREAK', 'Перерыв');

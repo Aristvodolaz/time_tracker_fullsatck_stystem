@@ -168,7 +168,16 @@ export async function getLastTodaySession(employeeBarcode: string) {
     return result.recordset[0] || null;
 }
 
-export async function createSession(data: { employeeBarcode: string, activityId: number, date: Date, inTime: Date, timeType: string }) {
+export async function createSession(data: {
+    employeeBarcode: string,
+    activityId: number,
+    date: Date,
+    inTime: Date,
+    timeType: string,
+    employeeFullName?: string | null,
+    employeeBossId?: string | number | null,
+    employeeManningId?: number | null
+}) {
     if (!data.employeeBarcode || typeof data.employeeBarcode !== 'string' || data.employeeBarcode.trim() === '') {
         throw new Error('Invalid employeeBarcode');
     }
@@ -180,9 +189,15 @@ export async function createSession(data: { employeeBarcode: string, activityId:
         .input('date', mssql.Date, data.date)
         .input('inTime', mssql.DateTime, data.inTime)
         .input('timeType', mssql.NVarChar, data.timeType)
+        .input('employeeFullName', mssql.NVarChar, data.employeeFullName ?? null)
+        .input('employeeBossId', mssql.NVarChar, data.employeeBossId != null ? String(data.employeeBossId) : null)
+        .input('employeeManningId', mssql.Int, data.employeeManningId ?? null)
         .query(`
-            INSERT INTO TimeSessions (employeeBarcode, activityId, date, inTime, status, timeType, breakTotalSeconds, breakNightSeconds, nightWorkedSeconds)
-            VALUES (@employeeBarcode, @activityId, @date, @inTime, 'WORK', @timeType, 0, 0, 0)
+            INSERT INTO TimeSessions (employeeBarcode, activityId, date, inTime, status, timeType,
+                breakTotalSeconds, breakNightSeconds, nightWorkedSeconds,
+                employeeFullName, employeeBossId, employeeManningId)
+            VALUES (@employeeBarcode, @activityId, @date, @inTime, 'WORK', @timeType, 0, 0, 0,
+                @employeeFullName, @employeeBossId, @employeeManningId)
         `);
 }
 
@@ -212,6 +227,7 @@ export async function getSessionsForReport(dateFrom?: string, dateTo?: string) {
             s.id, s.employeeBarcode, s.activityId, s.date, s.inTime, s.outTime, s.status,
             s.breakTotalSeconds, s.breakNightSeconds, s.nightWorkedSeconds, s.breakStartedAt, s.timeType,
             s.createdAt, s.updatedAt,
+            s.employeeFullName, s.employeeBossId, s.employeeManningId,
             a.activityBarcode AS activityBarcode,
             a.shortName AS shortName
         FROM TimeSessions s

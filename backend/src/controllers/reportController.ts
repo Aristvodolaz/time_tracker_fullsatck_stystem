@@ -17,32 +17,36 @@ export const getReport = async (req: Request, res: Response) => {
     const { dateFrom, dateTo } = req.query;
     const sessions = await db.getSessionsForReport(dateFrom as string, dateTo as string);
 
-    // Sequential lookup per unique barcode to avoid parallel OPENQUERY overload on linked server
-    const uniqueBarcodes = [...new Set((sessions as any[]).map((s: any) => s.employeeBarcode).filter(Boolean))];
+    // Use cached employee data from session; fall back to OPENQUERY only for old rows (employeeFullName is NULL)
     const empMap = new Map<string, any>();
-    for (const barcode of uniqueBarcodes) {
+    const missingBarcodes = [...new Set(
+        (sessions as any[])
+            .filter((s: any) => !s.employeeFullName && s.employeeBarcode)
+            .map((s: any) => s.employeeBarcode)
+    )];
+    for (const barcode of missingBarcodes) {
         const emp = await db.queryEmployee(barcode);
         if (emp) empMap.set(barcode, emp);
     }
 
-    // Sequential lookup for unique department names
-    const uniqueManningIds = [...new Set([...empMap.values()].map((e: any) => e.manningId).filter((v: any) => v != null))];
+    // Collect all unique manningIds (from cache + fallback) for department lookup
+    const manningIdSet = new Set<number>();
+    (sessions as any[]).forEach((s: any) => {
+        const mid = s.employeeManningId ?? empMap.get(s.employeeBarcode)?.manningId;
+        if (mid != null) manningIdSet.add(mid);
+    });
     const deptMap = new Map<number, string>();
-    for (const id of uniqueManningIds) {
+    for (const id of manningIdSet) {
         const name = await db.getDepartmentName(id);
         if (name) deptMap.set(id, name);
     }
 
     const enriched = (sessions as any[]).map((s: any) => {
-        const emp = empMap.get(s.employeeBarcode);
-        const departmentName = deptMap.get(emp?.manningId) ?? '';
-        return {
-            ...s,
-            fullName: emp?.fullName || '',
-            bossId: emp?.bossId ?? '',
-            manningId: emp?.manningId ?? null,
-            departmentName
-        };
+        const fallback = empMap.get(s.employeeBarcode);
+        const fullName = s.employeeFullName || fallback?.fullName || '';
+        const bossId = s.employeeBossId ?? fallback?.bossId ?? '';
+        const manningId = s.employeeManningId ?? fallback?.manningId ?? null;
+        return { ...s, fullName, bossId, manningId, departmentName: deptMap.get(manningId) ?? '' };
     });
     enriched.sort((a: any, b: any) => {
         const da = reportDayKey(a.date);
@@ -67,29 +71,39 @@ export const downloadExcelReport = async (req: Request, res: Response) => {
     const { dateFrom, dateTo } = req.query;
     const baseSessions = await db.getSessionsForReport(dateFrom as string, dateTo as string);
 
-    // Sequential lookup per unique barcode to avoid parallel OPENQUERY overload on linked server
-    const uniqueBarcodes = [...new Set((baseSessions as any[]).map((s: any) => s.employeeBarcode).filter(Boolean))];
+    // Use cached employee data from session; fall back to OPENQUERY only for old rows (employeeFullName is NULL)
     const empMap = new Map<string, any>();
-    for (const barcode of uniqueBarcodes) {
+    const missingBarcodes = [...new Set(
+        (baseSessions as any[])
+            .filter((s: any) => !s.employeeFullName && s.employeeBarcode)
+            .map((s: any) => s.employeeBarcode)
+    )];
+    for (const barcode of missingBarcodes) {
         const emp = await db.queryEmployee(barcode);
         if (emp) empMap.set(barcode, emp);
     }
 
-    // Sequential lookup for unique department names
-    const uniqueManningIds = [...new Set([...empMap.values()].map((e: any) => e.manningId).filter((v: any) => v != null))];
+    // Collect all unique manningIds for department lookup
+    const manningIdSet = new Set<number>();
+    (baseSessions as any[]).forEach((s: any) => {
+        const mid = s.employeeManningId ?? empMap.get(s.employeeBarcode)?.manningId;
+        if (mid != null) manningIdSet.add(mid);
+    });
     const deptMap = new Map<number, string>();
-    for (const id of uniqueManningIds) {
+    for (const id of manningIdSet) {
         const name = await db.getDepartmentName(id);
         if (name) deptMap.set(id, name);
     }
 
     const enrichedSessions = (baseSessions as any[]).map((s: any) => {
-        const emp = empMap.get(s.employeeBarcode);
-        const departmentName = deptMap.get(emp?.manningId) ?? '';
+        const fallback = empMap.get(s.employeeBarcode);
+        const fullName = s.employeeFullName || fallback?.fullName || '';
+        const bossId = s.employeeBossId ?? fallback?.bossId ?? '';
+        const manningId = s.employeeManningId ?? fallback?.manningId ?? null;
         return {
             ...s,
-            employee: emp || { fullName: '', bossId: '', manningId: null },
-            departmentName
+            employee: { fullName, bossId, manningId },
+            departmentName: deptMap.get(manningId) ?? ''
         };
     });
 
@@ -199,7 +213,8 @@ export const downloadExcelReport = async (req: Request, res: Response) => {
 
             row[`Время прихода активность ${n}`] = format(inTime, 'HH:mm');
             row[`Время ухода активность ${n}`] = outTime ? format(outTime, 'HH:mm') : '';
-            row[`Итоговое время на активности ${n} x1, ч`] = fmtHM(workedSeconds);
+            // Only the column matching the actual timeType gets the value — no duplication
+            row[`Итоговое время на активности ${n} x1, ч`] = timeType === 'X1' ? fmtHM(workedSeconds) : '';
             row[`Активность ${n}, вид времени x1.5`] = timeType === 'X1_5' ? fmtHM(workedSeconds) : '';
             row[`Активность ${n}, вид времени x2`] = timeType === 'X2' ? fmtHM(workedSeconds) : '';
             row[`Активность ${n}, вид времени Ночь`] = fmtHM(nightSeconds);
