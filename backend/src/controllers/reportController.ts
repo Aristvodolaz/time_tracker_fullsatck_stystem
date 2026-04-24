@@ -16,18 +16,34 @@ function reportDayKey(raw: Date | string | undefined | null): string {
 export const getReport = async (req: Request, res: Response) => {
     const { dateFrom, dateTo } = req.query;
     const sessions = await db.getSessionsForReport(dateFrom as string, dateTo as string);
-    // Связка: staff.employee.MANNING_ID = Departments.departmentNumber -> подставляем Departments.name в отчёт
-    const enriched = await Promise.all(sessions.map(async (s: any) => {
-        const emp = await db.queryEmployee(s.employeeBarcode);
-        const departmentName = await db.getDepartmentName(emp?.manningId ?? null);
+
+    // Sequential lookup per unique barcode to avoid parallel OPENQUERY overload on linked server
+    const uniqueBarcodes = [...new Set((sessions as any[]).map((s: any) => s.employeeBarcode).filter(Boolean))];
+    const empMap = new Map<string, any>();
+    for (const barcode of uniqueBarcodes) {
+        const emp = await db.queryEmployee(barcode);
+        if (emp) empMap.set(barcode, emp);
+    }
+
+    // Sequential lookup for unique department names
+    const uniqueManningIds = [...new Set([...empMap.values()].map((e: any) => e.manningId).filter((v: any) => v != null))];
+    const deptMap = new Map<number, string>();
+    for (const id of uniqueManningIds) {
+        const name = await db.getDepartmentName(id);
+        if (name) deptMap.set(id, name);
+    }
+
+    const enriched = (sessions as any[]).map((s: any) => {
+        const emp = empMap.get(s.employeeBarcode);
+        const departmentName = deptMap.get(emp?.manningId) ?? '';
         return {
             ...s,
             fullName: emp?.fullName || '',
             bossId: emp?.bossId ?? '',
             manningId: emp?.manningId ?? null,
-            departmentName: departmentName || ''
+            departmentName
         };
-    }));
+    });
     enriched.sort((a: any, b: any) => {
         const da = reportDayKey(a.date);
         const db = reportDayKey(b.date);
@@ -51,16 +67,31 @@ export const downloadExcelReport = async (req: Request, res: Response) => {
     const { dateFrom, dateTo } = req.query;
     const baseSessions = await db.getSessionsForReport(dateFrom as string, dateTo as string);
 
-    // Сотрудник ШК → employee.manning_id → Departments: departmentNumber = manning_id → name в отчёт (напр. ШК 62882000 → manning_id 178 → Departments[178].name)
-    const enrichedSessions = await Promise.all(baseSessions.map(async (s: any) => {
-        const emp = await db.queryEmployee(s.employeeBarcode);
-        const departmentName = await db.getDepartmentName(emp?.manningId ?? null);
+    // Sequential lookup per unique barcode to avoid parallel OPENQUERY overload on linked server
+    const uniqueBarcodes = [...new Set((baseSessions as any[]).map((s: any) => s.employeeBarcode).filter(Boolean))];
+    const empMap = new Map<string, any>();
+    for (const barcode of uniqueBarcodes) {
+        const emp = await db.queryEmployee(barcode);
+        if (emp) empMap.set(barcode, emp);
+    }
+
+    // Sequential lookup for unique department names
+    const uniqueManningIds = [...new Set([...empMap.values()].map((e: any) => e.manningId).filter((v: any) => v != null))];
+    const deptMap = new Map<number, string>();
+    for (const id of uniqueManningIds) {
+        const name = await db.getDepartmentName(id);
+        if (name) deptMap.set(id, name);
+    }
+
+    const enrichedSessions = (baseSessions as any[]).map((s: any) => {
+        const emp = empMap.get(s.employeeBarcode);
+        const departmentName = deptMap.get(emp?.manningId) ?? '';
         return {
             ...s,
-            employee: emp || { fullName: 'Unknown', bossId: '-', manningId: null },
-            departmentName: departmentName || ''
+            employee: emp || { fullName: '', bossId: '', manningId: null },
+            departmentName
         };
-    }));
+    });
 
     // Group by employee + date and sort by inTime
     const grouped: any = {};

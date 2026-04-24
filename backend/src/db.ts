@@ -40,10 +40,17 @@ export async function queryEmployee(barcode: string) {
         }
 
         const pool = await poolPromise;
-        const empId = parseInt(barcode.trim(), 10);
+        const raw = barcode.trim();
+        const variants = new Set<string>([raw]);
+        // Some scanner formats contain service digits at both ends.
+        if (raw.length > 2) variants.add(raw.slice(1, -1));
+        const numericIds = [...variants]
+            .map(v => v.replace(/\D/g, ''))
+            .filter(v => v !== '')
+            .map(v => parseInt(v, 10))
+            .filter(v => !isNaN(v));
 
-        // If barcode is not a number, skip DB query (won't match int ID)
-        if (!isNaN(empId)) {
+        for (const empId of numericIds) {
             const result = await pool.request()
                 .input('empId', mssql.Int, empId)
                 .query(`
@@ -71,6 +78,7 @@ export async function queryEmployee(barcode: string) {
         return null;
     }
 }
+
 
 
 
