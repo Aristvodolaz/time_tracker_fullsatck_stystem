@@ -253,6 +253,8 @@ const App: React.FC = () => {
     : (state.session?.breakTotalSeconds || 0);
 
   const currentCoeff = state.session?.timeType || 'X1';
+  const showCenterConflictAlert =
+    /зарегистр\w*\s+на\s+друг\w*\s+активност\w*/i.test(state.message);
 
   if (page === 'report') {
     return <ReportPage />;
@@ -547,6 +549,39 @@ const App: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Center alert for employee/activity conflict */}
+      {showCenterConflictAlert && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1200,
+            pointerEvents: 'none',
+          }}
+        >
+          <div
+            style={{
+              maxWidth: 760,
+              width: 'calc(100% - 48px)',
+              background: '#fff7ed',
+              border: '2px solid #f97316',
+              color: '#9a3412',
+              borderRadius: 14,
+              padding: '16px 20px',
+              fontSize: 22,
+              fontWeight: 700,
+              textAlign: 'center',
+              boxShadow: '0 10px 28px rgba(0, 0, 0, 0.2)',
+            }}
+          >
+            {state.message}
+          </div>
+        </div>
+      )}
 
       <style>{`
         @keyframes spin {
