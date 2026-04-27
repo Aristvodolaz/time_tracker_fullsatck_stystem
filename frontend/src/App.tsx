@@ -4,11 +4,11 @@ import { Settings, X, Plus, Trash2, Upload } from 'lucide-react';
 import ReportPage from './ReportPage';
 
 const API_BASE = import.meta.env.VITE_API_BASE ?? `${typeof window !== 'undefined' ? window.location.origin : ''}/api`;
+const DEFAULT_ZONE_ID = 'ТЕРМИНАЛ-3';
 
 type Status = 'IDLE' | 'WORK' | 'BREAK' | 'OUT';
 
 interface AppState {
-  zoneId: string;
   activity: any | null;
   employee: any | null;
   session: any | null;
@@ -20,12 +20,11 @@ interface AppState {
 
 const App: React.FC = () => {
   const [state, setState] = useState<AppState>({
-    zoneId: '',
     activity: null,
     employee: null,
     session: null,
     status: 'IDLE',
-    message: 'Выберите зону для начала работы',
+    message: 'Ожидание сканирования ШК',
     isError: false,
     timer: 0,
   });
@@ -44,12 +43,14 @@ const App: React.FC = () => {
     return isReport ? 'report' : 'main';
   });
   const [activities, setActivities] = useState<any[]>([]);
-  const [adminZone, setAdminZone] = useState('ТЕРМИНАЛ-3');
   const [bulkText, setBulkText] = useState('');
   const [bulkResult, setBulkResult] = useState<any>(null);
-  const [singleForm, setSingleForm] = useState({ zoneId: 'ТЕРМИНАЛ-3', activityBarcode: '', fullName: '', shortName: '', metric: '' });
+  const [singleForm, setSingleForm] = useState({ zoneId: DEFAULT_ZONE_ID, activityBarcode: '', fullName: '', shortName: '', metric: '' });
+  const [isLoading, setIsLoading] = useState(false);
+  const [loadingProgress, setLoadingProgress] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
   const clearId = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const selectedActivityRef = useRef<any | null>(null);
 
   useEffect(() => {
     const handleHash = () => {
@@ -74,6 +75,16 @@ const App: React.FC = () => {
     const clock = setInterval(() => setNow(new Date()), 1000);
     return () => clearInterval(clock);
   }, []);
+
+  // Fake progress while waiting backend response.
+  useEffect(() => {
+    if (!isLoading) return;
+    setLoadingProgress(10);
+    const id = setInterval(() => {
+      setLoadingProgress(prev => (prev >= 90 ? prev : Math.min(90, prev + 7)));
+    }, 120);
+    return () => clearInterval(id);
+  }, [isLoading]);
 
   // Refocus hidden input unless an interactive element is focused, or testMode/admin is open
   useEffect(() => {
@@ -110,6 +121,7 @@ const App: React.FC = () => {
   const processResponse = async (type: string, payload: any, message: string) => {
     if (type === 'ERROR') { triggerFeedback(message, true); return; }
     if (type === 'ACTIVITY_SELECTED') {
+      selectedActivityRef.current = payload;
       setState(prev => ({ ...prev, activity: payload, message: `Активность: ${payload.shortName}`, isError: false }));
       startAutoClear();
       return;
@@ -129,6 +141,10 @@ const App: React.FC = () => {
         ...prev, employee: payload.employee, session: payload.session, status: 'WORK', message, isError: false,
         ...(actUpdate ? { activity: actUpdate } : {}),
       }));
+      if (actUpdate) selectedActivityRef.current = actUpdate;
+      // After activity + employee are shown, clear UI quickly for next scans.
+      startAutoClear(3000);
+      return;
     } else if (['BREAK_STARTED', 'BREAK_STOPPED', 'TIME_TYPE_SELECTED'].includes(type)) {
       const statusRes = await axios.get(`${API_BASE}/status/employee?barcode=${state.employee.barcode}`);
       setState(prev => ({ ...prev, session: statusRes.data, status: statusRes.data.status, message, isError: false }));
@@ -143,28 +159,43 @@ const App: React.FC = () => {
     const value = scannedValue.trim();
     if (!value) return;
     setScannedValue('');
-    if (!state.zoneId) { triggerFeedback('Сначала выберите зону!', true); return; }
+    setIsLoading(true);
     try {
       const res = await axios.post(`${API_BASE}/scan`, {
-        zoneId: state.zoneId, scannedValue: value,
+        scannedValue: value,
         currentEmployeeBarcode: state.employee?.barcode,
-        currentActivityId: state.activity?.id
+        currentActivityId: state.activity?.id ?? selectedActivityRef.current?.id ?? null
       });
       await processResponse(res.data.type, res.data.payload, res.data.message);
     } catch { triggerFeedback('Ошибка связи с сервером', true); }
+    finally {
+      setLoadingProgress(100);
+      setTimeout(() => {
+        setIsLoading(false);
+        setLoadingProgress(0);
+      }, 180);
+    }
   };
 
   const handleCoeff = async (cmdBarcode: string) => {
     if (!state.session || !state.employee) return;
+    setIsLoading(true);
     try {
       const res = await axios.post(`${API_BASE}/scan`, {
-        zoneId: state.zoneId, scannedValue: cmdBarcode,
+        scannedValue: cmdBarcode,
         currentEmployeeBarcode: state.employee?.barcode,
-        currentActivityId: state.activity?.id
+        currentActivityId: state.activity?.id ?? selectedActivityRef.current?.id ?? null
       });
       const statusRes = await axios.get(`${API_BASE}/status/employee?barcode=${state.employee.barcode}`);
       setState(prev => ({ ...prev, session: statusRes.data, status: statusRes.data.status, message: res.data.message, isError: false }));
     } catch { triggerFeedback('Ошибка при смене коэффициента', true); }
+    finally {
+      setLoadingProgress(100);
+      setTimeout(() => {
+        setIsLoading(false);
+        setLoadingProgress(0);
+      }, 180);
+    }
   };
 
 
@@ -174,7 +205,7 @@ const App: React.FC = () => {
     startAutoClear();
   };
 
-  const startAutoClear = () => {
+  const startAutoClear = (timeoutMs: number = 30000) => {
     if (clearId.current) clearTimeout(clearId.current);
     clearId.current = setTimeout(() => {
       setState(prev => ({
@@ -183,10 +214,11 @@ const App: React.FC = () => {
         employee: null, 
         session: null,
         status: 'IDLE', 
-        message: 'Ожидание сканирования ШК', 
+        message: 'Ожидание сканирования ШК',
         isError: false
       }));
-    }, 30000);
+      selectedActivityRef.current = null;
+    }, timeoutMs);
   };
 
   const formatDT = (d?: string | Date | null) => {
@@ -233,17 +265,6 @@ const App: React.FC = () => {
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 24px', background: '#fff', borderBottom: '1px solid #e0e0e0' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
           <span style={{ fontWeight: 700, fontSize: 18, color: '#CC0000' }}>TimeTracker</span>
-          <select
-            value={state.zoneId}
-            onChange={e => setState(prev => ({ ...prev, zoneId: e.target.value, message: 'Ожидание сканирования ШК активности' }))}
-            style={{ padding: '6px 12px', borderRadius: 8, border: '1px solid #d0d0d0', fontSize: 14, background: '#f5f5f5', cursor: 'pointer', color: '#333333', fontWeight: 600 }}
-          >
-            <option value="">— Выберите зону —</option>
-            <option value="ТЕРМИНАЛ-3">Терминал 3</option>
-            <option value="ТЕРМИНАЛ-2">Терминал 2</option>
-            <option value="МЕЗОНИН">Мезонин</option>
-            <option value="БАЛК">Балк</option>
-          </select>
           <span style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13 }}>
             <span style={{ width: 8, height: 8, borderRadius: '50%', background: isFocused ? '#22c55e' : '#ef4444', display: 'inline-block' }} />
             <span style={{ color: isFocused ? '#16a34a' : '#dc2626', fontWeight: 600 }}>
@@ -281,21 +302,42 @@ const App: React.FC = () => {
                 setManualInput('');
                 // process directly without state timing issue
                 (async () => {
-                  if (!state.zoneId) { triggerFeedback('Сначала выберите зону!', true); return; }
+                  setIsLoading(true);
                   try {
                     const res = await axios.post(`${API_BASE}/scan`, {
-                      zoneId: state.zoneId, scannedValue: val,
+                      scannedValue: val,
                       currentEmployeeBarcode: state.employee?.barcode,
-                      currentActivityId: state.activity?.id
+                      currentActivityId: state.activity?.id ?? selectedActivityRef.current?.id ?? null
                     });
                     await processResponse(res.data.type, res.data.payload, res.data.message);
                   } catch { triggerFeedback('Ошибка связи с сервером', true); }
+                  finally {
+                    setLoadingProgress(100);
+                    setTimeout(() => {
+                      setIsLoading(false);
+                      setLoadingProgress(0);
+                    }, 180);
+                  }
                 })();
               }
             }}
             placeholder="Введите код ШК и нажмите Enter..."
             style={{ flex: 1, maxWidth: 400, padding: '6px 12px', borderRadius: 8, border: '1px solid #f59e0b', fontSize: 15, outline: 'none', background: '#fffbf0' }}
             autoFocus
+          />
+        </div>
+      )}
+
+      {/* Loading progress */}
+      {(isLoading || loadingProgress > 0) && (
+        <div style={{ height: 4, background: '#f1f1f1', width: '100%' }}>
+          <div
+            style={{
+              height: '100%',
+              width: `${loadingProgress}%`,
+              background: '#CC0000',
+              transition: 'width 120ms linear',
+            }}
           />
         </div>
       )}
@@ -448,7 +490,7 @@ const App: React.FC = () => {
         display: 'flex', gap: 16, justifyContent: 'center', flexWrap: 'wrap',
       }}>
         {[
-          { step: '1', text: 'Сканируйте ШК активности (участка)', color: '#CC0000' },
+          { step: '1', text: 'Сканируйте ШК активности', color: '#CC0000' },
           { step: '2', text: 'Сканируйте ШК сотрудника — рабочий день начнётся автоматически', color: '#16a34a' },
           { step: '3', text: 'Перерыв → сканируйте ШК-ПЕРЕРЫВ Уход → сканируйте ШК-УХОД', color: '#f59e0b' },
         ].map(s => (
@@ -485,11 +527,33 @@ const App: React.FC = () => {
           <div style={{ fontSize: 11, fontWeight: 700, color: state.isError ? '#b91c1c' : '#CC0000', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 2 }}>
             Системное сообщение
           </div>
-          <div style={{ fontSize: 17, fontWeight: 600, color: state.isError ? '#7f1d1d' : '#333333' }}>
-            {state.message}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            {isLoading && (
+              <span
+                style={{
+                  width: 12,
+                  height: 12,
+                  borderRadius: '50%',
+                  border: '2px solid #CC0000',
+                  borderTopColor: 'transparent',
+                  display: 'inline-block',
+                  animation: 'spin 0.8s linear infinite'
+                }}
+              />
+            )}
+            <div style={{ fontSize: 17, fontWeight: 600, color: state.isError ? '#7f1d1d' : '#333333' }}>
+              {isLoading ? 'Загрузка...' : state.message}
+            </div>
           </div>
         </div>
       </div>
+
+      <style>{`
+        @keyframes spin {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+      `}</style>
 
       {/* Hidden Scanner Input */}
       <form onSubmit={handleScan} style={{ position: 'absolute', opacity: 0, width: 0, height: 0, overflow: 'hidden', pointerEvents: 'none' }}>
@@ -524,14 +588,6 @@ const App: React.FC = () => {
                 <Upload size={16} /> Массовый импорт из Excel (вставьте колонки: Наименование, ШК, Метрика)
               </div>
               <div style={{ display: 'flex', gap: 10, marginBottom: 10, alignItems: 'center' }}>
-                <span style={{ fontSize: 13, color: '#999999' }}>Зона:</span>
-                <select value={adminZone} onChange={e => setAdminZone(e.target.value)}
-                  style={{ padding: '4px 10px', borderRadius: 6, border: '1px solid #d0d0d0', fontSize: 13 }}>
-                  <option value="ТЕРМИНАЛ-3">Терминал 3</option>
-                  <option value="ТЕРМИНАЛ-2">Терминал 2</option>
-                  <option value="МЕЗОНИН">Мезонин</option>
-                  <option value="БАЛК">Балк</option>
-                </select>
                 <span style={{ fontSize: 12, color: '#999999' }}>Скопируйте ячейки из Excel и вставьте в поле ниже</span>
               </div>
               <textarea
@@ -550,7 +606,7 @@ const App: React.FC = () => {
                       // shortName: last meaningful segment of fullName (up to 100 chars)
                       const parts = fullName?.split('_').filter(Boolean);
                       const shortName = (parts?.slice(-3).join('_') || fullName || '').slice(0, 99);
-                      return { zoneId: adminZone, activityBarcode, fullName, shortName, metric };
+                      return { zoneId: DEFAULT_ZONE_ID, activityBarcode, fullName, shortName, metric };
                     }).filter(a => a.activityBarcode && a.fullName);
                     if (!acts.length) { setBulkResult({ error: 'Нет данных для импорта' }); return; }
                     try {
@@ -589,7 +645,7 @@ const App: React.FC = () => {
                 <button onClick={async () => {
                   if (!singleForm.activityBarcode || !singleForm.fullName || !singleForm.shortName) return;
                   await axios.post(`${API_BASE}/activities`, { ...singleForm });
-                  setSingleForm({ zoneId: 'ТЕРМИНАЛ-3', activityBarcode: '', fullName: '', shortName: '', metric: '' });
+                  setSingleForm({ zoneId: DEFAULT_ZONE_ID, activityBarcode: '', fullName: '', shortName: '', metric: '' });
                   loadActivities();
                 }} style={{ padding: '6px 14px', borderRadius: 6, background: '#16a34a', color: '#fff', border: 'none', cursor: 'pointer', fontWeight: 700 }}>
                   Добавить
@@ -602,18 +658,17 @@ const App: React.FC = () => {
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
                 <thead>
                   <tr style={{ background: '#f5f5f5', position: 'sticky', top: 0 }}>
-                    {['Зона', 'ШК', 'Полное название', 'Короткое', 'Метрика', ''].map(h => (
+                    {['ШК', 'Полное название', 'Короткое', 'Метрика', ''].map(h => (
                       <th key={h} style={{ padding: '8px 10px', textAlign: 'left', fontWeight: 700, color: '#666666', borderBottom: '1px solid #e0e0e0' }}>{h}</th>
                     ))}
                   </tr>
                 </thead>
                 <tbody>
                   {activities.length === 0 && (
-                    <tr><td colSpan={6} style={{ padding: 20, textAlign: 'center', color: '#999999' }}>Нет активностей</td></tr>
+                    <tr><td colSpan={5} style={{ padding: 20, textAlign: 'center', color: '#999999' }}>Нет активностей</td></tr>
                   )}
                   {activities.map((act: any) => (
                     <tr key={act.id} style={{ borderBottom: '1px solid #f5f5f5' }}>
-                      <td style={{ padding: '6px 10px', color: '#999999' }}>{act.zoneId}</td>
                       <td style={{ padding: '6px 10px', fontFamily: 'monospace', fontWeight: 600 }}>{act.activityBarcode}</td>
                       <td style={{ padding: '6px 10px', maxWidth: 280, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={act.fullName}>{act.fullName}</td>
                       <td style={{ padding: '6px 10px', fontWeight: 600, color: '#333333' }}>{act.shortName}</td>

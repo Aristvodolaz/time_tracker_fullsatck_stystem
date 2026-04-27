@@ -10,7 +10,7 @@ function trimFirstAndLastDigit(value: string): string {
 }
 
 export const handleScan = async (req: Request, res: Response) => {
-    const { zoneId, scannedValue, currentEmployeeBarcode, currentActivityId, ts } = req.body;
+    const { scannedValue, currentEmployeeBarcode, currentActivityId, ts } = req.body;
     const now = ts ? new Date(ts) : new Date();
 
     if (!scannedValue || typeof scannedValue !== 'string' || scannedValue.trim() === '') {
@@ -23,15 +23,9 @@ export const handleScan = async (req: Request, res: Response) => {
         return handleCommand(command.code, currentEmployeeBarcode, now, res);
     }
 
-    // 2. Resolve Activity
+    // 2. Resolve Activity (no zone filtering — any activity matched by barcode is accepted)
     const activity = await db.getActivity(scannedValue);
     if (activity) {
-        if (!zoneId) {
-            return res.json({ type: 'ERROR', message: 'Выберите зону перед сканированием активности' });
-        }
-        if (activity.zoneId !== zoneId) {
-            return res.json({ type: 'ERROR', message: `Активность ${activity.shortName} не принадлежит зоне ${zoneId}` });
-        }
         return res.json({ type: 'ACTIVITY_SELECTED', payload: activity });
     }
 
@@ -49,7 +43,7 @@ async function handleEmployeeScan(employee: any, currentActivityId: number | nul
     const activeSession = await db.getActiveSession(employee.barcode);
     const lastToday = await db.getLastTodaySession(employee.barcode);
 
-    // If active session exists (WORK or BREAK), show status
+    // If active session exists (WORK or BREAK), show current status
     if (activeSession) {
         return res.json({
             type: 'EMPLOYEE_SHOWN',
@@ -111,7 +105,7 @@ async function handleEmployeeScan(employee: any, currentActivityId: number | nul
     return res.json({
         type: 'EMPLOYEE_SHOWN',
         payload: { employee, activeSession: null },
-        message: 'Готов к началу работы (сканируйте Участок)'
+        message: 'Готов к началу работы (сканируйте ШК активности)'
     });
 }
 

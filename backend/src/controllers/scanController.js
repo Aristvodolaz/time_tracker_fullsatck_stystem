@@ -8,7 +8,7 @@ function trimFirstAndLastDigit(value) {
     return s.slice(1, -1);
 }
 export const handleScan = async (req, res) => {
-    const { zoneId, scannedValue, currentEmployeeBarcode, currentActivityId, ts } = req.body;
+    const { scannedValue, currentEmployeeBarcode, currentActivityId, ts } = req.body;
     const now = ts ? new Date(ts) : new Date();
     if (!scannedValue || typeof scannedValue !== 'string' || scannedValue.trim() === '') {
         return res.json({ type: 'ERROR', message: 'Пустой или недопустимый штрих-код' });
@@ -18,15 +18,9 @@ export const handleScan = async (req, res) => {
     if (command) {
         return handleCommand(command.code, currentEmployeeBarcode, now, res);
     }
-    // 2. Resolve Activity
+    // 2. Resolve Activity (no zone filtering — any activity matched by barcode is accepted)
     const activity = await db.getActivity(scannedValue);
     if (activity) {
-        if (!zoneId) {
-            return res.json({ type: 'ERROR', message: 'Выберите зону перед сканированием активности' });
-        }
-        if (activity.zoneId !== zoneId) {
-            return res.json({ type: 'ERROR', message: `Активность ${activity.shortName} не принадлежит зоне ${zoneId}` });
-        }
         return res.json({ type: 'ACTIVITY_SELECTED', payload: activity });
     }
     // 3. Resolve Employee (для штрих-кода сотрудника обрезаем первую и последнюю цифру)
@@ -40,7 +34,7 @@ export const handleScan = async (req, res) => {
 async function handleEmployeeScan(employee, currentActivityId, now, res) {
     const activeSession = await db.getActiveSession(employee.barcode);
     const lastToday = await db.getLastTodaySession(employee.barcode);
-    // If active session exists (WORK or BREAK), show status
+    // If active session exists (WORK or BREAK), show current status
     if (activeSession) {
         return res.json({
             type: 'EMPLOYEE_SHOWN',
@@ -55,7 +49,10 @@ async function handleEmployeeScan(employee, currentActivityId, now, res) {
             activityId: currentActivityId,
             date: now,
             inTime: now,
-            timeType: 'X1'
+            timeType: 'X1',
+            employeeFullName: employee.fullName ?? null,
+            employeeBossId: employee.bossId ?? null,
+            employeeManningId: employee.manningId ?? null
         });
         const newSession = await db.getActiveSession(employee.barcode);
         return res.json({
@@ -79,7 +76,10 @@ async function handleEmployeeScan(employee, currentActivityId, now, res) {
             activityId: currentActivityId,
             date: now,
             inTime: now,
-            timeType: 'X1'
+            timeType: 'X1',
+            employeeFullName: employee.fullName ?? null,
+            employeeBossId: employee.bossId ?? null,
+            employeeManningId: employee.manningId ?? null
         });
         const newSession = await db.getActiveSession(employee.barcode);
         return res.json({
@@ -92,7 +92,7 @@ async function handleEmployeeScan(employee, currentActivityId, now, res) {
     return res.json({
         type: 'EMPLOYEE_SHOWN',
         payload: { employee, activeSession: null },
-        message: 'Готов к началу работы (сканируйте Участок)'
+        message: 'Готов к началу работы (сканируйте ШК активности)'
     });
 }
 async function handleCommand(code, employeeBarcode, now, res) {

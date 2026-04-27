@@ -133,7 +133,7 @@ export const downloadExcelReport = async (req: Request, res: Response) => {
         'Дата прихода активность 1',
         'Время прихода активность 1',
         'Время ухода активность 1',
-        'Итоговое время на активности 1 x1, ч',
+        'Активность 1, вид времени x1.',
         'Перерыв 1',
         'Активность 1, вид времени x1.5',
         'Активность 1, вид времени x2',
@@ -143,7 +143,7 @@ export const downloadExcelReport = async (req: Request, res: Response) => {
         'Наименование активности 2',
         'Время прихода активность 2',
         'Время ухода активность 2',
-        'Итоговое время на активности 2 x1, ч',
+        'Активность 2, вид времени x1.',
         'Активность 2, вид времени x1.5',
         'Активность 2, вид времени x2',
         'Активность 2, вид времени Ночь',
@@ -152,7 +152,7 @@ export const downloadExcelReport = async (req: Request, res: Response) => {
         'Наименование активности 3',
         'Время прихода активность 3',
         'Время ухода активность 3',
-        'Итоговое время на активности 3 x1, ч',
+        'Активность 3, вид времени x1.',
         'Активность 3, вид времени x1.5',
         'Активность 3, вид времени x2',
         'Активность 3, вид времени Ночь',
@@ -161,7 +161,7 @@ export const downloadExcelReport = async (req: Request, res: Response) => {
         'Наименование активности 4',
         'Время прихода активность 4',
         'Время ухода активность 4',
-        'Итоговое время на активности 4 x1, ч',
+        'Активность 4, вид времени x1.',
         'Активность 4, вид времени x1.5',
         'Активность 4, вид времени x2',
         'Активность 4, вид времени Ночь',
@@ -214,7 +214,7 @@ export const downloadExcelReport = async (req: Request, res: Response) => {
             row[`Время прихода активность ${n}`] = format(inTime, 'HH:mm');
             row[`Время ухода активность ${n}`] = outTime ? format(outTime, 'HH:mm') : '';
             // Only the column matching the actual timeType gets the value — no duplication
-            row[`Итоговое время на активности ${n} x1, ч`] = timeType === 'X1' ? fmtHM(workedSeconds) : '';
+            row[`Активность ${n}, вид времени x1.`] = timeType === 'X1' ? fmtHM(workedSeconds) : '';
             row[`Активность ${n}, вид времени x1.5`] = timeType === 'X1_5' ? fmtHM(workedSeconds) : '';
             row[`Активность ${n}, вид времени x2`] = timeType === 'X2' ? fmtHM(workedSeconds) : '';
             row[`Активность ${n}, вид времени Ночь`] = fmtHM(nightSeconds);
