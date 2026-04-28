@@ -2,6 +2,7 @@ import type { Request, Response } from 'express';
 import * as db from '../db.js';
 import * as XLSX from 'xlsx';
 import { format } from 'date-fns';
+import { calculateNightOverlap } from '../utils/timeUtils.js';
 
 // Календарный день строки отчёта: как в Excel, так и на экране — одна дата = одна логическая строка (без сдвига UTC на «YYYY-MM-DD» из SQL)
 function reportDayKey(raw: Date | string | undefined | null): string {
@@ -200,7 +201,12 @@ export const downloadExcelReport = async (req: Request, res: Response) => {
             const workedSeconds = outTime
                 ? Math.round((outTime.getTime() - inTime.getTime()) / 1000) - (s.breakTotalSeconds || 0)
                 : 0;
-            const nightSeconds = s.nightWorkedSeconds || 0;
+            const persistedNightSeconds = s.nightWorkedSeconds || 0;
+            // Fallback for sessions where nightWorkedSeconds was not persisted correctly.
+            const calculatedNightSeconds = outTime
+                ? Math.max(0, calculateNightOverlap(inTime, outTime) - (s.breakNightSeconds || 0))
+                : 0;
+            const nightSeconds = persistedNightSeconds > 0 ? persistedNightSeconds : calculatedNightSeconds;
             const daySeconds = Math.max(0, workedSeconds - nightSeconds);
             const timeType = s.timeType || 'X1';
 
