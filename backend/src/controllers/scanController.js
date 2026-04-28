@@ -21,6 +21,16 @@ export const handleScan = async (req, res) => {
     // 2. Resolve Activity (no zone filtering — any activity matched by barcode is accepted)
     const activity = await db.getActivity(scannedValue);
     if (activity) {
+        const employeeBarcode = typeof currentEmployeeBarcode === 'string' ? currentEmployeeBarcode.trim() : '';
+        if (employeeBarcode) {
+            const activeSession = await db.getActiveSession(employeeBarcode);
+            if (activeSession && activeSession.activityId !== activity.id) {
+                return res.json({
+                    type: 'ERROR',
+                    message: 'Вы еще зарегистрированы на другой активности. Сначала выполните УХОД на текущей активности.'
+                });
+            }
+        }
         return res.json({ type: 'ACTIVITY_SELECTED', payload: activity });
     }
     // 3. Resolve Employee (для штрих-кода сотрудника обрезаем первую и последнюю цифру)

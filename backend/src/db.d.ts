@@ -12,6 +12,9 @@ export declare function createSession(data: {
     date: Date;
     inTime: Date;
     timeType: string;
+    employeeFullName?: string | null;
+    employeeBossId?: string | number | null;
+    employeeManningId?: number | null;
 }): Promise<void>;
 export declare function updateSession(id: string, updates: any): Promise<void>;
 export declare function getSessionsForReport(dateFrom?: string, dateTo?: string): Promise<mssql.IRecordSet<any>>;

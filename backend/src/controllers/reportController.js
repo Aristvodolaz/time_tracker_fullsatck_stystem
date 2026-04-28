@@ -15,18 +15,36 @@ function reportDayKey(raw) {
 export const getReport = async (req, res) => {
     const { dateFrom, dateTo } = req.query;
     const sessions = await db.getSessionsForReport(dateFrom, dateTo);
-    // Связка: staff.employee.MANNING_ID = Departments.departmentNumber -> подставляем Departments.name в отчёт
-    const enriched = await Promise.all(sessions.map(async (s) => {
-        const emp = await db.queryEmployee(s.employeeBarcode);
-        const departmentName = await db.getDepartmentName(emp?.manningId ?? null);
-        return {
-            ...s,
-            fullName: emp?.fullName || '',
-            bossId: emp?.bossId ?? '',
-            manningId: emp?.manningId ?? null,
-            departmentName: departmentName || ''
-        };
-    }));
+    // Use cached employee data from session; fall back to OPENQUERY only for old rows (employeeFullName is NULL)
+    const empMap = new Map();
+    const missingBarcodes = [...new Set(sessions
+            .filter((s) => !s.employeeFullName && s.employeeBarcode)
+            .map((s) => s.employeeBarcode))];
+    for (const barcode of missingBarcodes) {
+        const emp = await db.queryEmployee(barcode);
+        if (emp)
+            empMap.set(barcode, emp);
+    }
+    // Collect all unique manningIds (from cache + fallback) for department lookup
+    const manningIdSet = new Set();
+    sessions.forEach((s) => {
+        const mid = s.employeeManningId ?? empMap.get(s.employeeBarcode)?.manningId;
+        if (mid != null)
+            manningIdSet.add(mid);
+    });
+    const deptMap = new Map();
+    for (const id of manningIdSet) {
+        const name = await db.getDepartmentName(id);
+        if (name)
+            deptMap.set(id, name);
+    }
+    const enriched = sessions.map((s) => {
+        const fallback = empMap.get(s.employeeBarcode);
+        const fullName = s.employeeFullName || fallback?.fullName || '';
+        const bossId = s.employeeBossId ?? fallback?.bossId ?? '';
+        const manningId = s.employeeManningId ?? fallback?.manningId ?? null;
+        return { ...s, fullName, bossId, manningId, departmentName: deptMap.get(manningId) ?? '' };
+    });
     enriched.sort((a, b) => {
         const da = reportDayKey(a.date);
         const db = reportDayKey(b.date);
@@ -50,16 +68,40 @@ function fmtHM(seconds) {
 export const downloadExcelReport = async (req, res) => {
     const { dateFrom, dateTo } = req.query;
     const baseSessions = await db.getSessionsForReport(dateFrom, dateTo);
-    // Сотрудник ШК → employee.manning_id → Departments: departmentNumber = manning_id → name в отчёт (напр. ШК 62882000 → manning_id 178 → Departments[178].name)
-    const enrichedSessions = await Promise.all(baseSessions.map(async (s) => {
-        const emp = await db.queryEmployee(s.employeeBarcode);
-        const departmentName = await db.getDepartmentName(emp?.manningId ?? null);
+    // Use cached employee data from session; fall back to OPENQUERY only for old rows (employeeFullName is NULL)
+    const empMap = new Map();
+    const missingBarcodes = [...new Set(baseSessions
+            .filter((s) => !s.employeeFullName && s.employeeBarcode)
+            .map((s) => s.employeeBarcode))];
+    for (const barcode of missingBarcodes) {
+        const emp = await db.queryEmployee(barcode);
+        if (emp)
+            empMap.set(barcode, emp);
+    }
+    // Collect all unique manningIds for department lookup
+    const manningIdSet = new Set();
+    baseSessions.forEach((s) => {
+        const mid = s.employeeManningId ?? empMap.get(s.employeeBarcode)?.manningId;
+        if (mid != null)
+            manningIdSet.add(mid);
+    });
+    const deptMap = new Map();
+    for (const id of manningIdSet) {
+        const name = await db.getDepartmentName(id);
+        if (name)
+            deptMap.set(id, name);
+    }
+    const enrichedSessions = baseSessions.map((s) => {
+        const fallback = empMap.get(s.employeeBarcode);
+        const fullName = s.employeeFullName || fallback?.fullName || '';
+        const bossId = s.employeeBossId ?? fallback?.bossId ?? '';
+        const manningId = s.employeeManningId ?? fallback?.manningId ?? null;
         return {
             ...s,
-            employee: emp || { fullName: 'Unknown', bossId: '-', manningId: null },
-            departmentName: departmentName || ''
+            employee: { fullName, bossId, manningId },
+            departmentName: deptMap.get(manningId) ?? ''
         };
-    }));
+    });
     // Group by employee + date and sort by inTime
     const grouped = {};
     enrichedSessions.forEach(s => {
@@ -77,6 +119,7 @@ export const downloadExcelReport = async (req, res) => {
         'ШК сотрудника', 'Boss ID', 'ФИО',
         'Основной Код активности (Подразделение)',
         'Код активности 1',
+        'Наименование активности 1',
         'Итого времени', 'Ночные итого',
         // Activity 1 detail columns
         'Дата прихода активность 1',
@@ -89,6 +132,7 @@ export const downloadExcelReport = async (req, res) => {
         'Активность 1, вид времени Ночь',
         // Activity 2
         'Код активности 2',
+        'Наименование активности 2',
         'Время прихода активность 2',
         'Время ухода активность 2',
         'Активность 2, вид времени x1.',
@@ -97,6 +141,7 @@ export const downloadExcelReport = async (req, res) => {
         'Активность 2, вид времени Ночь',
         // Activity 3
         'Код активности 3',
+        'Наименование активности 3',
         'Время прихода активность 3',
         'Время ухода активность 3',
         'Активность 3, вид времени x1.',
@@ -105,6 +150,7 @@ export const downloadExcelReport = async (req, res) => {
         'Активность 3, вид времени Ночь',
         // Activity 4
         'Код активности 4',
+        'Наименование активности 4',
         'Время прихода активность 4',
         'Время ухода активность 4',
         'Активность 4, вид времени x1.',
@@ -143,6 +189,7 @@ export const downloadExcelReport = async (req, res) => {
                 ? Math.round((outTime.getTime() - inTime.getTime()) / 1000) - (s.breakTotalSeconds || 0)
                 : 0;
             const nightSeconds = s.nightWorkedSeconds || 0;
+            const daySeconds = Math.max(0, workedSeconds - nightSeconds);
             const timeType = s.timeType || 'X1';
             totalWorkedSeconds += workedSeconds;
             totalNightSeconds += nightSeconds;
@@ -152,9 +199,10 @@ export const downloadExcelReport = async (req, res) => {
             }
             row[`Время прихода активность ${n}`] = format(inTime, 'HH:mm');
             row[`Время ухода активность ${n}`] = outTime ? format(outTime, 'HH:mm') : '';
-            row[`Активность ${n}, вид времени x1.`] = timeType === 'X1' ? fmtHM(workedSeconds) : '';
-            row[`Активность ${n}, вид времени x1.5`] = timeType === 'X1_5' ? fmtHM(workedSeconds) : '';
-            row[`Активность ${n}, вид времени x2`] = timeType === 'X2' ? fmtHM(workedSeconds) : '';
+            // Дневные часы — это отработанное время за вычетом ночных часов.
+            row[`Активность ${n}, вид времени x1.`] = timeType === 'X1' ? fmtHM(daySeconds) : '';
+            row[`Активность ${n}, вид времени x1.5`] = timeType === 'X1_5' ? fmtHM(daySeconds) : '';
+            row[`Активность ${n}, вид времени x2`] = timeType === 'X2' ? fmtHM(daySeconds) : '';
             row[`Активность ${n}, вид времени Ночь`] = fmtHM(nightSeconds);
         };
         // Только Departments.name (без подстановки кода активности)
@@ -166,6 +214,7 @@ export const downloadExcelReport = async (req, res) => {
             const n = i + 1;
             const barcode = s.activityBarcode;
             row[`Код активности ${n}`] = barcode != null && String(barcode).trim() !== '' ? String(barcode) : '';
+            row[`Наименование активности ${n}`] = s.shortName || '';
             fillActivity(s, n);
         }
         row['Итого времени'] = fmtHM(totalWorkedSeconds);

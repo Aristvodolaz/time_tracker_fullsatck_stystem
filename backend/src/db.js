@@ -35,9 +35,17 @@ export async function queryEmployee(barcode) {
             return null;
         }
         const pool = await poolPromise;
-        const empId = parseInt(barcode.trim(), 10);
-        // If barcode is not a number, skip DB query (won't match int ID)
-        if (!isNaN(empId)) {
+        const raw = barcode.trim();
+        const variants = new Set([raw]);
+        // Some scanner formats contain service digits at both ends.
+        if (raw.length > 2)
+            variants.add(raw.slice(1, -1));
+        const numericIds = [...variants]
+            .map(v => v.replace(/\D/g, ''))
+            .filter(v => v !== '')
+            .map(v => parseInt(v, 10))
+            .filter(v => !isNaN(v));
+        for (const empId of numericIds) {
             const result = await pool.request()
                 .input('empId', mssql.Int, empId)
                 .query(`
@@ -156,9 +164,15 @@ export async function createSession(data) {
         .input('date', mssql.Date, data.date)
         .input('inTime', mssql.DateTime, data.inTime)
         .input('timeType', mssql.NVarChar, data.timeType)
+        .input('employeeFullName', mssql.NVarChar, data.employeeFullName ?? null)
+        .input('employeeBossId', mssql.NVarChar, data.employeeBossId != null ? String(data.employeeBossId) : null)
+        .input('employeeManningId', mssql.Int, data.employeeManningId ?? null)
         .query(`
-            INSERT INTO TimeSessions (employeeBarcode, activityId, date, inTime, status, timeType, breakTotalSeconds, breakNightSeconds, nightWorkedSeconds)
-            VALUES (@employeeBarcode, @activityId, @date, @inTime, 'WORK', @timeType, 0, 0, 0)
+            INSERT INTO TimeSessions (employeeBarcode, activityId, date, inTime, status, timeType,
+                breakTotalSeconds, breakNightSeconds, nightWorkedSeconds,
+                employeeFullName, employeeBossId, employeeManningId)
+            VALUES (@employeeBarcode, @activityId, @date, @inTime, 'WORK', @timeType, 0, 0, 0,
+                @employeeFullName, @employeeBossId, @employeeManningId)
         `);
 }
 export async function updateSession(id, updates) {
@@ -186,6 +200,7 @@ export async function getSessionsForReport(dateFrom, dateTo) {
             s.id, s.employeeBarcode, s.activityId, s.date, s.inTime, s.outTime, s.status,
             s.breakTotalSeconds, s.breakNightSeconds, s.nightWorkedSeconds, s.breakStartedAt, s.timeType,
             s.createdAt, s.updatedAt,
+            s.employeeFullName, s.employeeBossId, s.employeeManningId,
             a.activityBarcode AS activityBarcode,
             a.shortName AS shortName
         FROM TimeSessions s

@@ -201,6 +201,7 @@ export const downloadExcelReport = async (req: Request, res: Response) => {
                 ? Math.round((outTime.getTime() - inTime.getTime()) / 1000) - (s.breakTotalSeconds || 0)
                 : 0;
             const nightSeconds = s.nightWorkedSeconds || 0;
+            const daySeconds = Math.max(0, workedSeconds - nightSeconds);
             const timeType = s.timeType || 'X1';
 
             totalWorkedSeconds += workedSeconds;
@@ -213,10 +214,10 @@ export const downloadExcelReport = async (req: Request, res: Response) => {
 
             row[`Время прихода активность ${n}`] = format(inTime, 'HH:mm');
             row[`Время ухода активность ${n}`] = outTime ? format(outTime, 'HH:mm') : '';
-            // Only the column matching the actual timeType gets the value — no duplication
-            row[`Активность ${n}, вид времени x1.`] = timeType === 'X1' ? fmtHM(workedSeconds) : '';
-            row[`Активность ${n}, вид времени x1.5`] = timeType === 'X1_5' ? fmtHM(workedSeconds) : '';
-            row[`Активность ${n}, вид времени x2`] = timeType === 'X2' ? fmtHM(workedSeconds) : '';
+            // Дневные часы — это отработанное время за вычетом ночных часов.
+            row[`Активность ${n}, вид времени x1.`] = timeType === 'X1' ? fmtHM(daySeconds) : '';
+            row[`Активность ${n}, вид времени x1.5`] = timeType === 'X1_5' ? fmtHM(daySeconds) : '';
+            row[`Активность ${n}, вид времени x2`] = timeType === 'X2' ? fmtHM(daySeconds) : '';
             row[`Активность ${n}, вид времени Ночь`] = fmtHM(nightSeconds);
         };
 

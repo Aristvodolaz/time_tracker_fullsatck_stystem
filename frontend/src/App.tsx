@@ -561,21 +561,25 @@ const App: React.FC = () => {
             justifyContent: 'center',
             zIndex: 1200,
             pointerEvents: 'none',
+            background: 'rgba(0, 0, 0, 0.35)',
           }}
         >
           <div
             style={{
-              maxWidth: 760,
-              width: 'calc(100% - 48px)',
+              maxWidth: 980,
+              width: 'calc(100% - 32px)',
               background: '#fff7ed',
-              border: '2px solid #f97316',
+              border: '4px solid #ea580c',
               color: '#9a3412',
-              borderRadius: 14,
-              padding: '16px 20px',
-              fontSize: 22,
-              fontWeight: 700,
+              borderRadius: 18,
+              padding: '28px 36px',
+              fontSize: 42,
+              lineHeight: 1.18,
+              fontWeight: 900,
               textAlign: 'center',
-              boxShadow: '0 10px 28px rgba(0, 0, 0, 0.2)',
+              letterSpacing: 0.4,
+              boxShadow: '0 18px 44px rgba(0, 0, 0, 0.35)',
+              textTransform: 'uppercase',
             }}
           >
             {state.message}
